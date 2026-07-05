@@ -1,0 +1,74 @@
+<div class="room">
+  <header class="bar">
+    <div class="brand">
+      <span class="mark"></span>
+      <span class="word">alokit</span>
+    </div>
+    <div class="meta">
+      <span class="mono-label">room</span>
+      <strong>{{ room() }}</strong>
+      <span class="status" [attr.data-state]="status()">
+        <i></i>{{ status() }}
+      </span>
+    </div>
+    <div class="count mono-label">{{ rs.tiles().length }} on air</div>
+  </header>
+
+  @if (rs.error(); as err) {
+    <div class="error">
+      <strong>Couldn't connect.</strong> {{ err }}
+      <button (click)="leave()">Back to lobby</button>
+    </div>
+  } @else if (!rs.connected) {
+    <div class="loading">
+      <span class="spinner"></span>
+      <p class="mono-label">establishing signal…</p>
+    </div>
+  } @else {
+    <main
+      class="grid"
+      [style.--cols]="columns()"
+    >
+      @for (tile of rs.tiles(); track tile.participant.sid) {
+        <app-participant-tile [tile]="tile" [revision]="rs.revision()" />
+      }
+    </main>
+  }
+
+  <footer class="controls">
+    <button
+      class="ctl"
+      [class.off]="!rs.micEnabled()"
+      (click)="rs.toggleMic()"
+      title="Toggle microphone"
+    >
+      <span class="ico">{{ rs.micEnabled() ? '🎙' : '🔇' }}</span>
+      <span class="lbl">mic</span>
+    </button>
+
+    <button
+      class="ctl"
+      [class.off]="!rs.camEnabled()"
+      (click)="rs.toggleCamera()"
+      title="Toggle camera"
+    >
+      <span class="ico">{{ rs.camEnabled() ? '📹' : '🚫' }}</span>
+      <span class="lbl">cam</span>
+    </button>
+
+    <button
+      class="ctl"
+      [class.active]="rs.screenShareEnabled()"
+      (click)="rs.toggleScreenShare()"
+      title="Share screen"
+    >
+      <span class="ico">🖥</span>
+      <span class="lbl">share</span>
+    </button>
+
+    <button class="ctl leave" (click)="leave()" title="Leave call">
+      <span class="ico">⎋</span>
+      <span class="lbl">leave</span>
+    </button>
+  </footer>
+</div>

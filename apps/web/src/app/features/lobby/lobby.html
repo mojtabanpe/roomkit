@@ -1,0 +1,75 @@
+<div class="lobby">
+  <div class="aside">
+    <div class="brand">
+      <span class="mark"></span>
+      <span class="word">alokit</span>
+    </div>
+    <h1>
+      Step into the<br /><span class="hl">live room.</span>
+    </h1>
+    <p class="lede">
+      Low-latency video rooms powered by LiveKit. Name yourself, pick a room,
+      and you're on air.
+    </p>
+    <div class="ticker mono-label">
+      <span></span> realtime · webrtc · end-to-end rooms
+    </div>
+  </div>
+
+  <form class="card" (submit)="$event.preventDefault(); join()">
+    <span class="mono-label">— join a room —</span>
+
+    <label class="field">
+      <span>Your name</span>
+      <input
+        type="text"
+        autocomplete="name"
+        placeholder="e.g. Mojtaba"
+        [ngModel]="name()"
+        (ngModelChange)="name.set($event)"
+        name="name"
+      />
+    </label>
+
+    <label class="field">
+      <span>Room</span>
+      <div class="room-row">
+        <input
+          type="text"
+          placeholder="signal-4821"
+          [ngModel]="room()"
+          (ngModelChange)="room.set($event)"
+          name="room"
+        />
+        <button type="button" class="dice" (click)="suggestRoom()" title="Suggest a room">
+          ⤮
+        </button>
+      </div>
+    </label>
+
+    <div class="toggles">
+      <button
+        type="button"
+        class="toggle"
+        [class.on]="mic()"
+        (click)="mic.set(!mic())"
+      >
+        <span class="ico">{{ mic() ? '🎙' : '🔇' }}</span>
+        <span>Microphone {{ mic() ? 'on' : 'off' }}</span>
+      </button>
+      <button
+        type="button"
+        class="toggle"
+        [class.on]="cam()"
+        (click)="cam.set(!cam())"
+      >
+        <span class="ico">{{ cam() ? '📹' : '🚫' }}</span>
+        <span>Camera {{ cam() ? 'on' : 'off' }}</span>
+      </button>
+    </div>
+
+    <button type="submit" class="go" [disabled]="!canJoin()">
+      Enter room <span>→</span>
+    </button>
+  </form>
+</div>

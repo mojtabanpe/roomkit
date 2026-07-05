@@ -1,0 +1,226 @@
+:host {
+  display: block;
+}
+
+.lobby {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  align-items: stretch;
+}
+
+@media (max-width: 860px) {
+  .lobby {
+    grid-template-columns: 1fr;
+  }
+  .aside {
+    display: none !important;
+  }
+}
+
+/* ---- left / editorial ---- */
+.aside {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 26px;
+  padding: 8vh 6vw;
+  position: relative;
+  border-right: 1px solid var(--line-soft);
+}
+
+.aside::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 39px,
+      rgba(255, 255, 255, 0.02) 39px 40px
+    );
+  pointer-events: none;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand .mark {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--signal);
+  box-shadow: 0 0 16px var(--signal);
+}
+.brand .word {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 22px;
+}
+
+h1 {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(40px, 6vw, 76px);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  margin: 0;
+}
+h1 .hl {
+  color: var(--signal);
+}
+
+.lede {
+  max-width: 42ch;
+  color: var(--ink-dim);
+  font-size: 17px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.ticker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ticker span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--signal);
+  box-shadow: 0 0 10px var(--signal);
+  animation: blip 1.4s ease-in-out infinite;
+}
+@keyframes blip {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* ---- right / form ---- */
+.card {
+  align-self: center;
+  justify-self: center;
+  width: min(440px, 90vw);
+  margin: 6vh 6vw;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 34px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, var(--surface-2), var(--surface-1));
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.field > span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-dim);
+}
+
+input {
+  width: 100%;
+  padding: 14px 15px;
+  border-radius: 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 16px;
+  font-family: var(--body);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+input::placeholder {
+  color: var(--ink-faint);
+}
+input:focus {
+  outline: none;
+  border-color: var(--signal);
+  box-shadow: 0 0 0 3px rgba(200, 255, 30, 0.15);
+}
+
+.room-row {
+  display: flex;
+  gap: 8px;
+}
+.room-row input {
+  font-family: var(--mono);
+}
+.dice {
+  flex: none;
+  width: 50px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface-3);
+  color: var(--signal);
+  font-size: 20px;
+}
+.dice:hover {
+  border-color: var(--signal);
+}
+
+.toggles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink-dim);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+.toggle .ico {
+  font-size: 17px;
+}
+.toggle.on {
+  color: var(--ink);
+  border-color: rgba(200, 255, 30, 0.4);
+  background: rgba(200, 255, 30, 0.06);
+}
+
+.go {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 14px;
+  border: none;
+  background: var(--signal);
+  color: #0a0a0b;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 17px;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+.go span {
+  transition: transform 0.2s ease;
+}
+.go:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -10px rgba(200, 255, 30, 0.6);
+}
+.go:hover:not(:disabled) span {
+  transform: translateX(4px);
+}
+.go:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
