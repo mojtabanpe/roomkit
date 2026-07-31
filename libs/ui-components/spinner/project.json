@@ -1,0 +1,33 @@
+{
+  "name": "spinner",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/ui-components/spinner/src",
+  "prefix": "hlm",
+  "projectType": "library",
+  "tags": [
+    "scope:shared",
+    "type:ui"
+  ],
+  "targets": {
+    "build": {
+      "executor": "@nx/angular:ng-packagr-lite",
+      "outputs": [
+        "{workspaceRoot}/dist/{projectRoot}"
+      ],
+      "defaultConfiguration": "production",
+      "options": {
+        "project": "libs/ui-components/spinner/ng-package.json",
+        "tsConfig": "libs/ui-components/spinner/tsconfig.lib.json"
+      },
+      "configurations": {
+        "production": {
+          "tsConfig": "libs/ui-components/spinner/tsconfig.lib.prod.json"
+        },
+        "development": {}
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}

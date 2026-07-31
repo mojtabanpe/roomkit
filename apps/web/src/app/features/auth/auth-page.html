@@ -1,0 +1,85 @@
+<div class="page">
+  <a class="brand" routerLink="/"><app-logo [size]="34" /></a>
+
+  <form class="card" (submit)="$event.preventDefault(); submit()">
+    <h1>{{ isRegister() ? 'ساخت حساب کاربری' : 'ورود به حساب' }}</h1>
+    <p class="sub">
+      {{
+        isRegister()
+          ? 'با یک حساب، نامتان ثابت می‌ماند و تاریخچهٔ جلسات و اتاق‌هایتان ذخیره می‌شود.'
+          : 'برای دیدن اتاق‌ها و جلسات خودتان وارد شوید.'
+      }}
+    </p>
+
+    @if (error(); as err) {
+      <div hlmAlert variant="destructive" role="alert">
+        <p hlmAlertDescription>{{ err }}</p>
+      </div>
+    }
+
+    <label class="field">
+      <span hlmLabel>ایمیل</span>
+      <input
+        hlmInput
+        type="email"
+        dir="ltr"
+        autocomplete="email"
+        placeholder="you@example.com"
+        [ngModel]="email()"
+        (ngModelChange)="email.set($event)"
+        name="email"
+        required
+      />
+    </label>
+
+    @if (isRegister()) {
+      <label class="field">
+        <span hlmLabel>نام نمایشی</span>
+        <input
+          hlmInput
+          type="text"
+          autocomplete="name"
+          placeholder="مثلاً مجتبی"
+          [ngModel]="displayName()"
+          (ngModelChange)="displayName.set($event)"
+          name="displayName"
+          required
+        />
+      </label>
+    }
+
+    <label class="field">
+      <span hlmLabel>رمز عبور</span>
+      <input
+        hlmInput
+        type="password"
+        dir="ltr"
+        [attr.autocomplete]="isRegister() ? 'new-password' : 'current-password'"
+        [ngModel]="password()"
+        (ngModelChange)="password.set($event)"
+        name="password"
+        required
+      />
+      @if (isRegister()) {
+        <small>حداقل ۸ نویسه.</small>
+      }
+    </label>
+
+    <button hlmBtn size="lg" type="submit" [disabled]="!canSubmit()">
+      {{ busy() ? 'لطفاً صبر کنید…' : isRegister() ? 'ساختن حساب' : 'ورود' }}
+    </button>
+
+    <p class="alt">
+      @if (isRegister()) {
+        حساب دارید؟ <a routerLink="/login">وارد شوید</a>
+      } @else {
+        حساب ندارید؟ <a routerLink="/register">حساب بسازید</a>
+      }
+    </p>
+
+    <p class="guest">
+      یا <a routerLink="/join">به‌عنوان مهمان وارد اتاق شوید</a> — برای این کار
+      حساب لازم نیست.
+    </p>
+  </form>
+</div>

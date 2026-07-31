@@ -1,0 +1,10 @@
+{
+  "name": "@org/ui-components/input",
+  "version": "0.0.1",
+  "peerDependencies": {
+    "@angular/core": "^21.2.0",
+    "@spartan-ng/brain": "^1.3.0",
+    "@org/ui-components/utils": "0.0.1"
+  },
+  "sideEffects": false
+}

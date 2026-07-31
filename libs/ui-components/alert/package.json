@@ -1,0 +1,10 @@
+{
+  "name": "@org/ui-components/alert",
+  "version": "0.0.1",
+  "peerDependencies": {
+    "@angular/core": "^21.2.0",
+    "@org/ui-components/utils": "0.0.1",
+    "class-variance-authority": "^0.7.1"
+  },
+  "sideEffects": false
+}

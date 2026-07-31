@@ -7,19 +7,23 @@
   position: relative;
   height: 100%;
   min-height: 180px;
-  border-radius: var(--radius);
+  border-radius: var(--rk-radius);
   overflow: hidden;
-  background:
-    radial-gradient(120% 120% at 50% 0%, var(--surface-2), var(--surface-1));
-  border: 1px solid var(--line-soft);
-  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  background: linear-gradient(
+    160deg,
+    var(--surface-container-high),
+    var(--surface-container-highest)
+  );
+  border: 1px solid var(--glass-border-strong);
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .tile.speaking {
-  border-color: var(--signal);
+  border-color: var(--primary);
   box-shadow:
-    0 0 0 1px var(--signal),
-    0 0 28px -4px rgba(200, 255, 30, 0.55);
+    0 0 0 2px var(--primary),
+    0 0 32px -6px rgba(79, 70, 229, 0.6);
 }
 
 .video {
@@ -27,7 +31,8 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  background: #000;
+  /* Letterbox bars read as part of the surface, not as a black hole. */
+  background: var(--surface-container-highest);
 }
 
 .no-video .video {
@@ -42,18 +47,16 @@
 }
 
 .avatar span {
-  font-family: var(--display);
-  font-weight: 800;
+  font-weight: 700;
   font-size: clamp(28px, 6vw, 52px);
-  letter-spacing: 0.02em;
   width: 1.9em;
   height: 1.9em;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  color: var(--signal);
-  background: var(--surface-3);
-  border: 1px solid var(--line);
+  color: var(--on-primary-container);
+  background: var(--primary-container);
+  border: 1px solid var(--glass-border-strong);
 }
 
 .overlay {
@@ -64,42 +67,50 @@
   justify-content: space-between;
   gap: 8px;
   padding: 12px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.72), transparent);
 }
 
+/* Frosted chips instead of a dark scrim. The white is carried higher than the
+   0.4 used on static panels — these sit on arbitrary video, and dark text needs
+   to hold contrast over a dark frame too. */
 .name {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 6px 12px;
+  border-radius: var(--rk-radius-pill);
   font-weight: 600;
   font-size: 14px;
-  color: var(--ink);
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+  color: var(--on-surface);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: var(--glass-blur) saturate(140%);
+  -webkit-backdrop-filter: var(--glass-blur) saturate(140%);
+  border: 1px solid var(--glass-border-strong);
+  box-shadow: 0 2px 12px rgba(19, 27, 46, 0.18);
+  min-width: 0;
 }
 
 .name em {
   font-style: normal;
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: #0a0a0b;
-  background: var(--signal);
-  padding: 2px 6px;
-  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--on-primary);
+  background: var(--primary);
+  padding: 2px 7px;
+  border-radius: var(--rk-radius-pill);
+  flex: none;
 }
 
 .dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--ink-faint);
+  background: var(--outline);
   flex: none;
 }
 
 .dot.live {
-  background: var(--signal);
-  box-shadow: 0 0 10px var(--signal);
+  background: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.25);
   animation: pulse 1.1s ease-in-out infinite;
 }
 
@@ -110,35 +121,46 @@
     opacity: 1;
   }
   50% {
-    transform: scale(1.5);
-    opacity: 0.6;
+    transform: scale(1.35);
+    opacity: 0.65;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot.live {
+    animation: none;
   }
 }
 
 .badges {
   display: flex;
   gap: 6px;
+  flex: none;
 }
 
 .badge {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding: 3px 7px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid var(--line);
-  color: var(--ink-dim);
-  backdrop-filter: blur(4px);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  --icon-size: 13px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 5px 9px;
+  border-radius: var(--rk-radius-pill);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: var(--glass-blur) saturate(140%);
+  -webkit-backdrop-filter: var(--glass-blur) saturate(140%);
+  border: 1px solid var(--glass-border-strong);
+  box-shadow: 0 2px 12px rgba(19, 27, 46, 0.18);
+  color: var(--on-surface-variant);
 }
 
 .badge.muted {
-  color: var(--danger);
-  border-color: rgba(255, 77, 77, 0.4);
+  color: var(--on-error-container);
+  background: rgba(255, 218, 214, 0.92);
 }
 
 .badge.screen {
-  color: var(--signal);
-  border-color: rgba(200, 255, 30, 0.4);
+  color: var(--on-primary-container);
+  background: rgba(226, 223, 255, 0.92);
 }

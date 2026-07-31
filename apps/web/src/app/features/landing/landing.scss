@@ -1,0 +1,425 @@
+:host {
+  display: block;
+  --gutter: clamp(20px, 5vw, 64px);
+}
+
+/* ---------- nav ---------- */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px var(--gutter);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.brand {
+  display: inline-flex;
+  text-decoration: none;
+  color: inherit;
+}
+
+.links {
+  display: flex;
+  gap: 26px;
+  margin-inline: auto;
+}
+.links a {
+  position: relative;
+  padding: 6px 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--on-surface-variant);
+  text-decoration: none;
+}
+.links a:hover {
+  color: var(--on-surface);
+}
+.links a.active {
+  color: var(--primary);
+}
+.links a.active::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--primary);
+}
+
+.nav-account {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.nav-account .who {
+  font-size: 14px;
+  font-weight: 600;
+  max-width: 16ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nav-account .link {
+  border: none;
+  background: none;
+  padding: 0;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--on-surface-variant);
+  text-decoration: none;
+}
+.nav-account .link:hover {
+  color: var(--primary);
+}
+
+@media (max-width: 720px) {
+  .links {
+    display: none;
+  }
+  .nav-account {
+    margin-inline-start: auto;
+  }
+}
+
+/* ---------- hero ---------- */
+.hero {
+  text-align: center;
+  padding: clamp(56px, 9vw, 104px) var(--gutter) 0;
+  display: grid;
+  justify-items: center;
+  gap: 22px;
+}
+
+h1 {
+  font: var(--display-lg);
+  margin: 0;
+  max-width: 18ch;
+}
+
+.lede {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 17px;
+  line-height: 1.9;
+  color: var(--on-surface-variant);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 6px;
+}
+
+/* ---------- product preview ---------- */
+.preview {
+  padding: clamp(40px, 6vw, 72px) var(--gutter);
+}
+
+.frame {
+  max-width: 860px;
+  margin: 0 auto;
+  border-radius: var(--rk-radius);
+  overflow: hidden;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border-strong);
+  box-shadow: var(--shadow);
+}
+
+.chrome {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--glass-border);
+}
+.chrome .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--outline-variant);
+}
+.chrome .title {
+  margin-inline-start: auto;
+  font-size: 12px;
+  color: var(--on-surface-variant);
+}
+
+.shot {
+  display: grid;
+  grid-template-columns: 1fr 170px;
+  gap: 12px;
+  padding: 12px;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Stand-in "camera feeds" — tinted panels, no stock photography. */
+.t {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--rk-radius-sm);
+  border: 1px solid var(--glass-border-strong);
+  display: flex;
+  align-items: flex-end;
+  padding: 10px;
+}
+.t1 {
+  background: linear-gradient(150deg, #cfd6ff, #a9b4f5);
+}
+.t2 {
+  background: linear-gradient(150deg, #bfe9f2, #8fd3e3);
+}
+.t3 {
+  background: linear-gradient(150deg, #e6d9f6, #c3b1ea);
+}
+.t4 {
+  background: linear-gradient(150deg, #f6dcdc, #e6b8bd);
+}
+.t .chip {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--rk-radius-pill);
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--on-surface);
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--rk-radius-sm);
+  background: var(--surface-container-lowest);
+  border: 1px solid var(--outline-variant);
+}
+.side .s-title {
+  font-size: 12px;
+  font-weight: 700;
+}
+.side .row {
+  height: 10px;
+  border-radius: var(--rk-radius-pill);
+  background: var(--surface-container-high);
+}
+.side .row:nth-child(3) {
+  width: 80%;
+}
+.side .row:nth-child(4) {
+  width: 65%;
+}
+
+.dock {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px;
+  border-top: 1px solid var(--glass-border);
+}
+.dock .d {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--surface-container-high);
+}
+.dock .d.end {
+  background: var(--error);
+}
+
+@media (max-width: 640px) {
+  .shot {
+    grid-template-columns: 1fr;
+  }
+  .side {
+    display: none;
+  }
+}
+
+/* ---------- features ---------- */
+.features {
+  padding: clamp(40px, 6vw, 80px) var(--gutter);
+  scroll-margin-top: 80px;
+}
+
+h2 {
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  margin: 0 0 40px;
+}
+
+/* Deliberately 2×2 rather than auto-fit — four cards should never orphan. */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+@media (max-width: 760px) {
+  .cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* hlmCard supplies structure; the glass surface and hover lift stay ours. */
+.card {
+  padding: 28px;
+  border-radius: var(--rk-radius);
+  border-color: var(--glass-border-strong);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--rk-radius-sm);
+  margin-bottom: 16px;
+}
+.icon svg {
+  width: 24px;
+  height: 24px;
+}
+.i-speed {
+  color: var(--teal);
+  background: var(--teal-container);
+}
+.i-shield {
+  color: var(--primary);
+  background: var(--primary-container);
+}
+.i-share {
+  color: var(--on-tertiary-container);
+  background: var(--tertiary-container);
+}
+.i-chat {
+  color: var(--primary);
+  background: var(--primary-container);
+}
+
+.card h3 {
+  margin: 0 0 10px;
+  font-size: 18px;
+  font-weight: 700;
+}
+.card p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.9;
+  color: var(--on-surface-variant);
+}
+
+/* ---------- closing CTA ---------- */
+.cta {
+  margin: clamp(20px, 4vw, 40px) var(--gutter) clamp(60px, 8vw, 90px);
+  padding: clamp(36px, 5vw, 56px) 24px;
+  text-align: center;
+  border-radius: var(--rk-radius);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border-strong);
+  scroll-margin-top: 80px;
+}
+.cta h2 {
+  margin-bottom: 14px;
+}
+.cta p {
+  margin: 0 auto 26px;
+  max-width: 56ch;
+  color: var(--on-surface-variant);
+  line-height: 1.9;
+}
+
+/* ---------- footer ---------- */
+.foot {
+  padding: 44px var(--gutter) 24px;
+  background: var(--surface-container-low);
+  border-top: 1px solid var(--outline-variant);
+}
+
+.cols {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr;
+  gap: 32px;
+  max-width: 980px;
+  margin: 0 auto 32px;
+}
+@media (max-width: 720px) {
+  .cols {
+    grid-template-columns: 1fr;
+    gap: 26px;
+  }
+}
+
+.col h4 {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.col ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.col a {
+  font-size: 14px;
+  color: var(--on-surface-variant);
+  text-decoration: none;
+}
+.col a:hover {
+  color: var(--primary);
+}
+.col .soon li {
+  font-size: 14px;
+  color: var(--outline);
+}
+.col .soon em {
+  font-style: normal;
+  font-size: 10px;
+  padding: 2px 7px;
+  margin-inline-start: 6px;
+  border-radius: var(--rk-radius-pill);
+  background: var(--surface-container-high);
+  color: var(--on-surface-variant);
+}
+
+.about p {
+  margin: 14px 0 0;
+  max-width: 34ch;
+  font-size: 14px;
+  line-height: 1.9;
+  color: var(--on-surface-variant);
+}
+.legal {
+  max-width: 980px;
+  margin: 0 auto;
+  padding-top: 20px;
+  border-top: 1px solid var(--outline-variant);
+  font-size: 13px;
+  color: var(--on-surface-variant);
+}

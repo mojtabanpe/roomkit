@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 import { Track } from 'livekit-client';
 import { Tile } from '../../core/room.service';
+import { Icon } from '../../shared/icon';
 
 /**
  * Renders one participant: their camera/screen video, name, and live status.
@@ -14,6 +15,7 @@ import { Tile } from '../../core/room.service';
  */
 @Component({
   selector: 'app-participant-tile',
+  imports: [Icon],
   template: `
     <div class="tile" [class.speaking]="isSpeaking()" [class.no-video]="!hasVideo()">
       <video #video class="video" autoplay playsinline [muted]="tile().isLocal"></video>
@@ -29,11 +31,19 @@ import { Tile } from '../../core/room.service';
         <div class="name">
           <span class="dot" [class.live]="isSpeaking()"></span>
           {{ label() }}
-          @if (tile().isLocal) { <em>you</em> }
+          @if (tile().isLocal) { <em>شما</em> }
         </div>
         <div class="badges">
-          @if (!micOn()) { <span class="badge muted" title="Muted">✕ mic</span> }
-          @if (isScreen()) { <span class="badge screen">screen</span> }
+          @if (!micOn()) {
+            <span class="badge muted" title="صدا قطع است">
+              <app-icon name="mic-off" [strokeWidth]="2" />
+            </span>
+          }
+          @if (isScreen()) {
+            <span class="badge screen">
+              <app-icon name="screen-share" [strokeWidth]="2" /> صفحه
+            </span>
+          }
         </div>
       </div>
     </div>
@@ -96,6 +106,11 @@ export class ParticipantTile {
 
   initials(): string {
     const s = this.label().trim();
+    // Persian script is cursive — two loose letters would join into a
+    // nonsense ligature, so show a single letter for Persian names.
+    if (/[؀-ۿ]/.test(s)) {
+      return s[0] ?? '';
+    }
     const parts = s.split(/\s+/).filter(Boolean);
     const chars = parts.length > 1 ? parts[0][0] + parts[1][0] : s.slice(0, 2);
     return chars.toUpperCase();

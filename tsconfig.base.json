@@ -10,11 +10,69 @@
     "importHelpers": true,
     "target": "es2015",
     "module": "esnext",
-    "lib": ["es2020", "dom"],
+    "lib": [
+      "es2020",
+      "dom"
+    ],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
-    "paths": {}
+    "paths": {
+      "@org/ui-components": [
+        "./libs/ui-components/src/index.ts"
+      ],
+      "@org/ui-components/button": [
+        "./libs/ui-components/button/src/index.ts"
+      ],
+      "@org/ui-components/utils": [
+        "./libs/ui-components/utils/src/index.ts"
+      ],
+      "@org/ui-components/input": [
+        "./libs/ui-components/input/src/index.ts"
+      ],
+      "@org/ui-components/label": [
+        "./libs/ui-components/label/src/index.ts"
+      ],
+      "@org/ui-components/card": [
+        "./libs/ui-components/card/src/index.ts"
+      ],
+      "@org/ui-components/badge": [
+        "./libs/ui-components/badge/src/index.ts"
+      ],
+      "@org/ui-components/avatar": [
+        "./libs/ui-components/avatar/src/index.ts"
+      ],
+      "@org/ui-components/separator": [
+        "./libs/ui-components/separator/src/index.ts"
+      ],
+      "@org/ui-components/dialog": [
+        "./libs/ui-components/dialog/src/index.ts"
+      ],
+      "@org/ui-components/select": [
+        "./libs/ui-components/select/src/index.ts"
+      ],
+      "@org/ui-components/checkbox": [
+        "./libs/ui-components/checkbox/src/index.ts"
+      ],
+      "@org/ui-components/switch": [
+        "./libs/ui-components/switch/src/index.ts"
+      ],
+      "@org/ui-components/tabs": [
+        "./libs/ui-components/tabs/src/index.ts"
+      ],
+      "@org/ui-components/tooltip": [
+        "./libs/ui-components/tooltip/src/index.ts"
+      ],
+      "@org/ui-components/alert": [
+        "./libs/ui-components/alert/src/index.ts"
+      ],
+      "@org/ui-components/spinner": [
+        "./libs/ui-components/spinner/src/index.ts"
+      ]
+    }
   },
-  "exclude": ["node_modules", "tmp"]
+  "exclude": [
+    "node_modules",
+    "tmp"
+  ]
 }

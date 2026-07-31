@@ -1,0 +1,11 @@
+{
+  "name": "@org/ui-components/spinner",
+  "version": "0.0.1",
+  "peerDependencies": {
+    "@angular/core": "^21.2.0",
+    "@ng-icons/core": "^32.2.0",
+    "@ng-icons/lucide": "^32.2.0",
+    "@org/ui-components/utils": "0.0.1"
+  },
+  "sideEffects": false
+}

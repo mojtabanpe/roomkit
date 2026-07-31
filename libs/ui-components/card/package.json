@@ -1,0 +1,9 @@
+{
+  "name": "@org/ui-components/card",
+  "version": "0.0.1",
+  "peerDependencies": {
+    "@angular/core": "^21.2.0",
+    "@org/ui-components/utils": "0.0.1"
+  },
+  "sideEffects": false
+}

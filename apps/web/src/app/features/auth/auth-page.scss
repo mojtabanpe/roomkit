@@ -1,0 +1,86 @@
+:host {
+  display: block;
+}
+
+.page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 24px;
+  padding: 22px clamp(20px, 5vw, 56px) 8vh;
+}
+
+.brand {
+  display: inline-flex;
+  justify-self: start;
+  color: inherit;
+  text-decoration: none;
+}
+
+.card {
+  align-self: center;
+  justify-self: center;
+  width: min(430px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 34px;
+  border-radius: var(--rk-radius);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border-strong);
+  box-shadow: var(--shadow);
+}
+
+h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.sub {
+  margin: -6px 0 0;
+  font-size: 14px;
+  line-height: 1.9;
+  color: var(--on-surface-variant);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.field > span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--on-surface-variant);
+}
+.field small {
+  font-size: 11px;
+  color: var(--outline);
+}
+
+.alt,
+.guest {
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.9;
+  color: var(--on-surface-variant);
+}
+.guest {
+  padding-top: 14px;
+  border-top: 1px solid var(--outline-variant);
+  color: var(--outline);
+}
+
+a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}

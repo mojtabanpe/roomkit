@@ -1,0 +1,16 @@
+{
+  "name": "@org/ui-components/dialog",
+  "version": "0.0.1",
+  "peerDependencies": {
+    "@angular/common": "^21.2.0",
+    "@angular/core": "^21.2.0",
+    "@spartan-ng/brain": "^1.3.0",
+    "@angular/cdk": "^21.2.14",
+    "@ng-icons/core": "^32.2.0",
+    "@ng-icons/lucide": "^32.2.0",
+    "@org/ui-components/button": "0.0.1",
+    "@org/ui-components/utils": "0.0.1",
+    "clsx": "^2.1.1"
+  },
+  "sideEffects": false
+}

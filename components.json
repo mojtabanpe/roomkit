@@ -1,0 +1,7 @@
+{
+  "componentsPath": "libs/ui-components",
+  "generateAs": "entrypoint",
+  "buildable": true,
+  "style": "vega",
+  "importAlias": "@org/ui-components"
+}

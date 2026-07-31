@@ -15,28 +15,10 @@
   align-items: center;
   gap: 24px;
   padding: 14px 22px;
-  border-bottom: 1px solid var(--line-soft);
-  background: rgba(10, 10, 11, 0.6);
-  backdrop-filter: blur(10px);
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-.brand .mark {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--signal);
-  box-shadow: 0 0 14px var(--signal);
-}
-.brand .word {
-  font-family: var(--display);
-  font-weight: 800;
-  font-size: 19px;
-  letter-spacing: -0.01em;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .meta {
@@ -44,41 +26,53 @@
   align-items: center;
   gap: 10px;
 }
-.meta strong {
-  font-family: var(--mono);
+.meta .room-name {
   font-size: 14px;
+  padding: 4px 10px;
+  border-radius: var(--rk-radius-pill);
+  background: var(--surface-container-high);
+  color: var(--on-surface);
+  font-variant-numeric: tabular-nums;
+  /* Room slugs may be Latin inside an RTL bar — keep them self-contained. */
+  unicode-bidi: isolate;
 }
 
 .status {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  padding: 4px 9px;
-  border-radius: 99px;
-  border: 1px solid var(--line);
-  color: var(--ink-dim);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--rk-radius-pill);
+  border: 1px solid var(--outline-variant);
+  color: var(--on-surface-variant);
 }
 .status i {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--ink-faint);
+  background: var(--outline);
 }
+/* On air — broadcast red, the loudest state in the palette. */
 .status[data-state='live'] {
-  color: var(--signal);
-  border-color: rgba(200, 255, 30, 0.35);
+  color: var(--on-tertiary-container);
+  background: var(--tertiary-container);
+  border-color: transparent;
 }
 .status[data-state='live'] i {
-  background: var(--signal);
-  box-shadow: 0 0 8px var(--signal);
+  background: var(--tertiary);
+  box-shadow: 0 0 0 3px rgba(149, 0, 43, 0.18);
+}
+.status[data-state='connecting'],
+.status[data-state='reconnecting'] {
+  color: var(--on-teal-container);
+  background: var(--teal-container);
+  border-color: transparent;
 }
 .status[data-state='connecting'] i,
 .status[data-state='reconnecting'] i {
-  background: var(--amber);
+  background: var(--teal);
   animation: blink 0.8s steps(2, start) infinite;
 }
 
@@ -88,18 +82,178 @@
   }
 }
 
-.count {
-  margin-left: auto;
+.timer {
+  font-variant-numeric: tabular-nums;
 }
 
-/* ---- grid ---- */
+.count {
+  margin-inline-start: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 720px) {
+  .bar {
+    gap: 12px;
+    padding: 12px 14px;
+  }
+  .timer,
+  .count {
+    display: none;
+  }
+  .count {
+    margin-inline-start: auto;
+  }
+}
+
+/* ---- body: video area + sidebar ---- */
+.body {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: 0;
+}
+/* Sidebar sits on the start (right) edge in RTL, matching the design. */
+.body.with-side {
+  grid-template-columns: 320px 1fr;
+}
+.body.with-side .side {
+  order: -1;
+}
+
+/* ---- stage ---- */
+.stage {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+  overflow: auto;
+}
+
+.notice {
+  margin: 14px 18px 0;
+  padding: 10px 14px;
+  border-radius: var(--rk-radius-sm);
+  background: var(--tertiary-container);
+  color: var(--on-tertiary-container);
+  font-size: 13px;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr));
   gap: 14px;
   padding: 18px;
   align-content: stretch;
-  overflow: auto;
+  min-height: 0;
+}
+
+/* ---- sidebar ---- */
+.side {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-inline-end: 1px solid var(--glass-border);
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 10px 10px 0;
+  gap: 6px;
+}
+.tabs button {
+  position: relative;
+  padding: 11px 8px;
+  border: none;
+  border-radius: var(--rk-radius-sm) var(--rk-radius-sm) 0 0;
+  background: transparent;
+  color: var(--on-surface-variant);
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.tabs button:hover {
+  color: var(--on-surface);
+}
+.tabs button.on {
+  background: var(--surface-container-lowest);
+  color: var(--primary);
+  box-shadow: inset 0 -2px 0 var(--primary);
+}
+
+.people {
+  list-style: none;
+  margin: 0;
+  padding: 10px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+}
+.people .ava {
+  flex: none;
+  width: 30px;
+  height: 30px;
+}
+/* Spartan's fallback is bg-muted, which disappears on the highlighted "you"
+   row — carry the brand fill instead. */
+.people .ava span {
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: 700;
+  font-size: 13px;
+}
+.people li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border-radius: var(--rk-radius-sm);
+  background: var(--surface-container-lowest);
+  border: 1px solid transparent;
+}
+.people li.me {
+  border-color: var(--primary);
+  background: var(--primary-container);
+}
+
+.people .nm {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.people .nm em {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--on-surface-variant);
+}
+.people .ind {
+  flex: none;
+  --icon-size: 17px;
+  color: var(--on-surface-variant);
+}
+.people .ind.muted {
+  color: var(--error);
+}
+
+/* On narrow screens the sidebar covers the video instead of squeezing it. */
+@media (max-width: 900px) {
+  .body.with-side {
+    grid-template-columns: 1fr;
+  }
+  .side {
+    position: fixed;
+    inset: 0 0 92px 0;
+    z-index: 30;
+    border-inline-start: none;
+    background: var(--surface);
+  }
 }
 
 app-participant-tile {
@@ -126,33 +280,11 @@ app-participant-tile {
 }
 .error {
   gap: 12px;
+  color: var(--on-error-container);
 }
 .error strong {
-  font-family: var(--display);
-  font-size: 22px;
-}
-.error button {
-  margin-top: 8px;
-  padding: 10px 18px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: var(--surface-2);
-  color: var(--ink);
-  font-weight: 600;
-}
-
-.spinner {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  border: 3px solid var(--surface-3);
-  border-top-color: var(--signal);
-  animation: spin 0.7s linear infinite;
-}
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  font: var(--title-lg);
+  color: var(--error);
 }
 
 /* ---- controls ---- */
@@ -161,54 +293,94 @@ app-participant-tile {
   justify-content: center;
   gap: 12px;
   padding: 16px;
-  border-top: 1px solid var(--line-soft);
-  background: rgba(10, 10, 11, 0.7);
-  backdrop-filter: blur(10px);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-top: 1px solid var(--glass-border);
+}
+
+/* hlm-separator is a div; give it the height the flex row needs. */
+.divider {
+  align-self: stretch;
+  margin-inline: 4px;
 }
 
 .ctl {
+  position: relative;
   display: grid;
   justify-items: center;
   gap: 4px;
-  width: 76px;
-  padding: 10px 0;
-  border-radius: 14px;
-  border: 1px solid var(--line);
-  background: var(--surface-2);
-  color: var(--ink);
+  min-width: 84px;
+  padding: 10px 12px;
+  border-radius: var(--rk-radius-sm);
+  border: 1px solid var(--outline-variant);
+  background: var(--surface-container-lowest);
+  color: var(--on-surface);
   transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease;
 }
 .ctl:hover {
   transform: translateY(-2px);
-  border-color: var(--ink-faint);
+  border-color: var(--outline);
 }
 .ctl:active {
   transform: translateY(0);
 }
 .ctl .ico {
-  font-size: 20px;
-  line-height: 1;
+  --icon-size: 22px;
 }
 .ctl .lbl {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--ink-dim);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--on-surface-variant);
 }
 
 .ctl.off {
-  background: var(--surface-1);
-  border-color: rgba(255, 77, 77, 0.4);
+  background: var(--error-container);
+  border-color: transparent;
+  color: var(--on-error-container);
+}
+.ctl.off .lbl {
+  color: var(--on-error-container);
 }
 .ctl.active {
-  border-color: var(--signal);
-  box-shadow: 0 0 18px -6px var(--signal);
+  background: var(--primary-container);
+  border-color: var(--primary);
+  color: var(--on-primary-container);
+}
+.ctl.active .lbl {
+  color: var(--on-primary-container);
 }
 .ctl.leave {
-  background: rgba(255, 77, 77, 0.12);
-  border-color: rgba(255, 77, 77, 0.5);
+  background: var(--error);
+  border-color: transparent;
+  color: var(--on-error);
+}
+.ctl.leave .lbl {
+  color: var(--on-error);
 }
 .ctl.leave:hover {
-  background: rgba(255, 77, 77, 0.22);
+  box-shadow: 0 14px 28px -14px rgba(186, 26, 26, 0.8);
+}
+
+@media (max-width: 560px) {
+  .controls {
+    gap: 8px;
+    padding: 12px 8px;
+  }
+  /* hlm-separator is a div; give it the height the flex row needs. */
+.divider {
+  align-self: stretch;
+  margin-inline: 4px;
+}
+
+.ctl {
+    min-width: 62px;
+    padding: 9px 6px;
+  }
+  .ctl .lbl {
+    font-size: 10px;
+  }
+  .divider {
+    display: none;
+  }
 }

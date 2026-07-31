@@ -1,0 +1,12 @@
+{
+  "name": "@org/ui-components/button",
+  "version": "0.0.1",
+  "peerDependencies": {
+    "@angular/core": "^21.2.0",
+    "@spartan-ng/brain": "^1.3.0",
+    "@org/ui-components/utils": "0.0.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1"
+  },
+  "sideEffects": false
+}

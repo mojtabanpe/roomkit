@@ -1,100 +1,253 @@
-/* alokit · broadcast control-room theme */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import 'tailwindcss/utilities.css';
+
+@import "@spartan-ng/brain/hlm-tailwind-preset.css";
+
+/* Tailwind v4 only scans the tree this stylesheet lives in, so the helm
+   components in the shared library would ship with none of their classes
+   generated. Register them explicitly. */
+@source "../../../libs/ui-components";
+/* روم‌کیت · Luminous Glass (RTL)
+Design tokens imported from Google Stitch — "Luminous Glass".
+High-key, airy surfaces with a heavy backdrop blur for depth. */
 
 :root {
-  /* Surfaces — near-black, lifted in steps */
-  --bg: #0a0a0b;
-  --surface-1: #121214;
-  --surface-2: #1a1a1d;
-  --surface-3: #232327;
-  --line: #2c2c31;
-  --line-soft: #1f1f23;
+color-scheme: light;
 
-  /* Ink */
-  --ink: #f4f4f2;
-  --ink-dim: #a6a6a2;
-  --ink-faint: #6c6c69;
+/* ---- Surfaces ---- */
+--surface: #faf8ff;
+--surface-dim: #d2d9f4;
+--surface-bright: #faf8ff;
+--surface-container-lowest: #ffffff;
+--surface-container-low: #f2f3ff;
+--surface-container: #eaedff;
+--surface-container-high: #e2e7ff;
+--surface-container-highest: #dae2fd;
 
-  /* Signal accent — live lime + warning amber + danger */
-  --signal: #c8ff1e;
-  --signal-dim: #93b915;
-  --amber: #ffb020;
-  --danger: #ff4d4d;
+/* ---- Ink & lines ---- */
+--on-surface: #131b2e;
+--on-surface-variant: #464555;
+--outline: #777587;
+--outline-variant: #c7c4d8;
 
-  --radius: 14px;
-  --radius-sm: 9px;
+/* ---- Accents ---- */
+--primary: #4f46e5;
+--on-primary: #ffffff;
+--primary-container: #e2dfff;
+--on-primary-container: #0f0069;
 
-  --mono: 'Space Mono', ui-monospace, 'SF Mono', monospace;
-  --display: 'Syne', sans-serif;
-  --body: 'Hanken Grotesk', system-ui, sans-serif;
+--teal: #00687a;
+--on-teal: #ffffff;
+--teal-container: #acedff;
+--on-teal-container: #001f26;
 
-  --shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.7);
+--tertiary: #95002b;
+--on-tertiary: #ffffff;
+--tertiary-container: #ffdadb;
+--on-tertiary-container: #40000d;
+
+--error: #ba1a1a;
+--on-error: #ffffff;
+--error-container: #ffdad6;
+--on-error-container: #93000a;
+
+/* ---- Typography ----
+Plus Jakarta Sans carries Latin; Vazirmatn picks up every Persian glyph. */
+--font: 'Plus Jakarta Sans', 'Inter', 'Vazirmatn', system-ui, sans-serif;
+
+/* Scale. Persian is cursive, so the tracking from the spec is dropped —
+negative letter-spacing breaks the joins between letters. */
+--display-lg: 700 clamp(34px, 4.6vw, 48px) / 1.35 var(--font);
+--headline-md: 600 32px / 40px var(--font);
+--title-lg: 600 20px / 28px var(--font);
+--body-base: 400 16px / 24px var(--font);
+--label: 500 12px / 16px var(--font);
+
+/* ---- Glass ---- */
+--glass-bg: rgba(255, 255, 255, 0.4);
+--glass-blur: blur(20px);
+--glass-border: rgba(255, 255, 255, 0.3);
+--glass-border-strong: rgba(255, 255, 255, 0.5);
+
+--rk-radius: 20px;
+--rk-radius-sm: 12px;
+--rk-radius-pill: 999px;
+
+--shadow: 0 24px 60px -28px rgba(19, 27, 46, 0.35);
+--shadow-sm: 0 8px 24px -14px rgba(19, 27, 46, 0.3);
 }
 
 * {
-  box-sizing: border-box;
+box-sizing: border-box;
 }
 
 html,
 body {
-  margin: 0;
-  height: 100%;
+margin: 0;
+height: 100%;
 }
 
 body {
-  background: var(--bg);
-  color: var(--ink);
-  font-family: var(--body);
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-  /* Atmospheric: two soft radial glows + fine grain */
-  background-image:
-    radial-gradient(900px 500px at 12% -10%, rgba(200, 255, 30, 0.08), transparent 60%),
-    radial-gradient(700px 600px at 110% 10%, rgba(120, 140, 255, 0.06), transparent 55%);
-  background-attachment: fixed;
+background: var(--surface);
+color: var(--on-surface);
+font: var(--body-base);
+-webkit-font-smoothing: antialiased;
+text-rendering: optimizeLegibility;
 }
 
-/* Grain overlay */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  pointer-events: none;
-  opacity: 0.035;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+/* Cinematic fluid backdrop — slow-drifting colour fields the glass sits on.
+Done in CSS rather than WebGL so it costs nothing during a video call. */
+body::before {
+content: '';
+position: fixed;
+inset: -25%;
+z-index: -1;
+pointer-events: none;
+background:
+radial-gradient(38% 42% at 22% 28%, rgba(79, 70, 229, 0.3), transparent 62%),
+radial-gradient(34% 40% at 78% 18%, rgba(0, 104, 122, 0.24), transparent 62%),
+radial-gradient(42% 44% at 64% 82%, rgba(149, 0, 43, 0.14), transparent 62%),
+radial-gradient(36% 38% at 12% 84%, rgba(79, 70, 229, 0.2), transparent 62%);
+filter: blur(40px);
+animation: drift 28s ease-in-out infinite alternate;
+}
+
+@keyframes drift {
+50% {
+transform: translate3d(2%, -3%, 0) scale(1.12) rotate(4deg);
+}
+100% {
+transform: translate3d(-3%, 2%, 0) scale(1.06) rotate(-3deg);
+}
+}
+
+@media (prefers-reduced-motion: reduce) {
+body::before {
+animation: none;
+}
 }
 
 app-root {
-  display: block;
-  min-height: 100%;
+display: block;
+min-height: 100%;
 }
 
 ::selection {
-  background: var(--signal);
-  color: #0a0a0b;
+background: var(--primary-container);
+color: var(--on-primary-container);
 }
 
 /* Scrollbar */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+width: 10px;
+height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--surface-3);
-  border-radius: 99px;
-  border: 2px solid var(--bg);
+background: var(--outline-variant);
+border-radius: var(--rk-radius-pill);
+border: 2px solid transparent;
+background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+background: var(--outline);
+background-clip: content-box;
 }
 
-/* Shared primitives */
-.mono-label {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
+/* ---- Shared primitives ---- */
+
+/* Small caption. The spec calls this "label-caps", but Persian has no case
+and is cursive — no uppercase, no tracking. */
+.label {
+font: var(--label);
+color: var(--on-surface-variant);
+}
+
+/* Latin-only technical bits (room slugs, codes) inside RTL text. */
+.latin {
+direction: ltr;
+unicode-bidi: isolate;
+font-variant-numeric: tabular-nums;
+}
+
+/* Frosted panel — the core surface treatment of this theme. */
+.glass {
+background: var(--glass-bg);
+backdrop-filter: var(--glass-blur);
+-webkit-backdrop-filter: var(--glass-blur);
+border: 1px solid var(--glass-border);
 }
 
 button {
-  font-family: var(--body);
-  cursor: pointer;
+font-family: var(--font);
+cursor: pointer;
+}
+
+:focus-visible {
+outline: 2px solid var(--primary);
+outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   Spartan UI (helm) theme contract.
+
+   Spartan/shadcn expects its own variable names. Rather than let its neutral
+   palette sit alongside ours — two competing systems — every name below is
+   mapped onto the Luminous Glass tokens above, so generated helm components
+   come out on-brand with no per-component overrides.
+
+   Note the deliberate namespacing: our panel radii live on --rk-radius* because
+   Spartan owns --radius and derives --radius-sm/md/lg/xl from it, and our teal
+   accent lives on --teal* because Spartan's --secondary means "muted surface",
+   not "second brand colour".
+   --------------------------------------------------------------------------- */
+:root {
+  --font-sans: var(--font);
+
+  /* Spartan's component radius — tighter than our 20px panel radius. */
+  --radius: 0.75rem;
+
+  --background: var(--surface);
+  --foreground: var(--on-surface);
+
+  --card: var(--surface-container-lowest);
+  --card-foreground: var(--on-surface);
+  --popover: var(--surface-container-lowest);
+  --popover-foreground: var(--on-surface);
+
+  --primary: #4f46e5;
+  --primary-foreground: #ffffff;
+
+  /* "secondary" in Spartan is a quiet surface, not a second brand colour. */
+  --secondary: var(--surface-container-high);
+  --secondary-foreground: var(--on-surface);
+
+  --muted: var(--surface-container);
+  --muted-foreground: var(--on-surface-variant);
+  --accent: var(--primary-container);
+  --accent-foreground: var(--on-primary-container);
+
+  --destructive: var(--error);
+
+  --border: var(--outline-variant);
+  --input: var(--outline-variant);
+  --ring: var(--primary);
+
+  --sidebar: var(--surface-container-low);
+  --sidebar-foreground: var(--on-surface);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--on-primary);
+  --sidebar-accent: var(--primary-container);
+  --sidebar-accent-foreground: var(--on-primary-container);
+  --sidebar-border: var(--outline-variant);
+  --sidebar-ring: var(--primary);
+}
+
+@layer base {
+  /* Spartan's default base layer also paints body bg/text, which would cover
+     the fluid backdrop — body styling stays with the Luminous Glass rules. */
+  * {
+    @apply border-border outline-ring/50;
+  }
 }

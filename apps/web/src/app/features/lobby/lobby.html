@@ -1,30 +1,28 @@
 <div class="lobby">
   <div class="aside">
-    <div class="brand">
-      <span class="mark"></span>
-      <span class="word">alokit</span>
-    </div>
+    <a class="brand" routerLink="/"><app-logo [size]="34" /></a>
     <h1>
-      Step into the<br /><span class="hl">live room.</span>
+      قدم بگذار در<br /><span class="hl">اتاق زنده.</span>
     </h1>
     <p class="lede">
-      Low-latency video rooms powered by LiveKit. Name yourself, pick a room,
-      and you're on air.
+      اتاق‌های ویدیویی با تأخیر بسیار کم، بر پایهٔ LiveKit. اسمت را بنویس، یک
+      اتاق انتخاب کن و روی خط بیا.
     </p>
-    <div class="ticker mono-label">
-      <span></span> realtime · webrtc · end-to-end rooms
+    <div class="ticker label">
+      <span></span> بلادرنگ · WebRTC · اتاق‌های اختصاصی
     </div>
   </div>
 
   <form class="card" (submit)="$event.preventDefault(); join()">
-    <span class="mono-label">— join a room —</span>
+    <span class="label">— ورود به اتاق —</span>
 
     <label class="field">
-      <span>Your name</span>
+      <span hlmLabel>نام شما</span>
       <input
+        hlmInput
         type="text"
         autocomplete="name"
-        placeholder="e.g. Mojtaba"
+        placeholder="نام نمایشی"
         [ngModel]="name()"
         (ngModelChange)="name.set($event)"
         name="name"
@@ -32,44 +30,68 @@
     </label>
 
     <label class="field">
-      <span>Room</span>
+      <span hlmLabel>نام اتاق</span>
       <div class="room-row">
         <input
+          hlmInput
           type="text"
+          dir="ltr"
           placeholder="signal-4821"
           [ngModel]="room()"
           (ngModelChange)="room.set($event)"
           name="room"
         />
-        <button type="button" class="dice" (click)="suggestRoom()" title="Suggest a room">
+        <button hlmBtn variant="outline" size="icon" type="button" class="dice" (click)="suggestRoom()" title="پیشنهاد یک اتاق">
           ⤮
         </button>
       </div>
     </label>
 
+    @if (savedRooms().length > 0) {
+      <div class="saved">
+        <span class="label">اتاق‌های شما</span>
+        <div class="chips">
+          @for (r of savedRooms(); track r.slug) {
+            <button hlmBtn variant="outline" size="sm" type="button" (click)="useRoom(r.slug)">{{ r.name }}</button>
+          }
+        </div>
+      </div>
+    }
+
     <div class="toggles">
       <button
+        hlmBtn
+        [variant]="mic() ? 'secondary' : 'outline'"
         type="button"
         class="toggle"
-        [class.on]="mic()"
+        [attr.aria-pressed]="mic()"
         (click)="mic.set(!mic())"
       >
-        <span class="ico">{{ mic() ? '🎙' : '🔇' }}</span>
-        <span>Microphone {{ mic() ? 'on' : 'off' }}</span>
+        <app-icon class="ico" [name]="mic() ? 'mic' : 'mic-off'" />
+        <span>میکروفون {{ mic() ? 'روشن' : 'خاموش' }}</span>
       </button>
       <button
+        hlmBtn
+        [variant]="cam() ? 'secondary' : 'outline'"
         type="button"
         class="toggle"
-        [class.on]="cam()"
+        [attr.aria-pressed]="cam()"
         (click)="cam.set(!cam())"
       >
-        <span class="ico">{{ cam() ? '📹' : '🚫' }}</span>
-        <span>Camera {{ cam() ? 'on' : 'off' }}</span>
+        <app-icon class="ico" [name]="cam() ? 'video' : 'video-off'" />
+        <span>دوربین {{ cam() ? 'روشن' : 'خاموش' }}</span>
       </button>
     </div>
 
-    <button type="submit" class="go" [disabled]="!canJoin()">
-      Enter room <span>→</span>
+    <button hlmBtn size="lg" type="submit" [disabled]="!canJoin()">
+      ورود به اتاق <span>←</span>
     </button>
+
+    @if (!auth.isLoggedIn()) {
+      <p class="guest-note">
+        مهمان هستید. <a routerLink="/login">وارد شوید</a> تا اتاق‌ها و تاریخچهٔ
+        جلساتتان ذخیره شود.
+      </p>
+    }
   </form>
 </div>

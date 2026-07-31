@@ -1,0 +1,12 @@
+{
+  "name": "@org/ui-components/utils",
+  "version": "0.0.1",
+  "peerDependencies": {
+    "@angular/common": "^21.2.0",
+    "@angular/core": "^21.2.0",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.6.0",
+    "@angular/cdk": "^21.2.14"
+  },
+  "sideEffects": false
+}

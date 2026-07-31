@@ -1,0 +1,33 @@
+{
+  "name": "avatar",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/ui-components/avatar/src",
+  "prefix": "hlm",
+  "projectType": "library",
+  "tags": [
+    "scope:shared",
+    "type:ui"
+  ],
+  "targets": {
+    "build": {
+      "executor": "@nx/angular:ng-packagr-lite",
+      "outputs": [
+        "{workspaceRoot}/dist/{projectRoot}"
+      ],
+      "defaultConfiguration": "production",
+      "options": {
+        "project": "libs/ui-components/avatar/ng-package.json",
+        "tsConfig": "libs/ui-components/avatar/tsconfig.lib.json"
+      },
+      "configurations": {
+        "production": {
+          "tsConfig": "libs/ui-components/avatar/tsconfig.lib.prod.json"
+        },
+        "development": {}
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}

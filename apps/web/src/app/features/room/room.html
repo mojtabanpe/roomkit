@@ -1,74 +1,155 @@
 <div class="room">
   <header class="bar">
-    <div class="brand">
-      <span class="mark"></span>
-      <span class="word">alokit</span>
-    </div>
+    <app-logo [size]="26" />
+
     <div class="meta">
-      <span class="mono-label">room</span>
-      <strong>{{ room() }}</strong>
+      <strong class="room-name">{{ room() }}</strong>
       <span class="status" [attr.data-state]="status()">
-        <i></i>{{ status() }}
+        <i></i>{{ statusLabel() }}
       </span>
+      @if (rs.connected) {
+        <span class="timer label">مدت زمان: {{ elapsed() }}</span>
+      }
     </div>
-    <div class="count mono-label">{{ rs.tiles().length }} on air</div>
+
+    <div class="count label">{{ rs.tiles().length | faNumber }} نفر در جلسه</div>
   </header>
 
-  @if (rs.error(); as err) {
-    <div class="error">
-      <strong>Couldn't connect.</strong> {{ err }}
-      <button (click)="leave()">Back to lobby</button>
-    </div>
-  } @else if (!rs.connected) {
-    <div class="loading">
-      <span class="spinner"></span>
-      <p class="mono-label">establishing signal…</p>
-    </div>
-  } @else {
-    <main
-      class="grid"
-      [style.--cols]="columns()"
-    >
-      @for (tile of rs.tiles(); track tile.participant.sid) {
-        <app-participant-tile [tile]="tile" [revision]="rs.revision()" />
-      }
-    </main>
-  }
+  <div class="body" [class.with-side]="sidebarOpen()">
+    @if (rs.error(); as err) {
+      <div class="state error">
+        <div hlmAlert variant="destructive">
+          <h4 hlmAlertTitle>اتصال برقرار نشد.</h4>
+          <p hlmAlertDescription>{{ err }}</p>
+        </div>
+        <button hlmBtn variant="outline" (click)="leave()">
+          بازگشت به صفحهٔ ورود
+        </button>
+      </div>
+    } @else if (!rs.connected) {
+      <div class="state loading">
+        <hlm-spinner />
+        <p class="label">در حال برقراری ارتباط…</p>
+      </div>
+    } @else {
+      <main class="stage">
+        @if (rs.deviceNotice(); as notice) {
+          <p class="notice">{{ notice }}</p>
+        }
+        <div class="grid" [style.--cols]="columns()">
+          @for (tile of rs.tiles(); track tile.participant.sid) {
+            <app-participant-tile [tile]="tile" [revision]="rs.revision()" />
+          }
+        </div>
+      </main>
+    }
+
+    @if (sidebarOpen()) {
+      <aside class="side">
+        <div class="tabs" role="tablist">
+          <button
+            role="tab"
+            [attr.aria-selected]="tab() === 'people'"
+            [class.on]="tab() === 'people'"
+            (click)="tab.set('people')"
+          >
+            شرکت‌کنندگان
+          </button>
+          <button
+            role="tab"
+            [attr.aria-selected]="tab() === 'chat'"
+            [class.on]="tab() === 'chat'"
+            (click)="openChat()"
+          >
+            گفتگو
+            @if (rs.unreadCount() > 0 && tab() !== 'chat') {
+              <span hlmBadge class="badge">{{ rs.unreadCount() | faNumber }}</span>
+            }
+          </button>
+        </div>
+
+        @if (tab() === 'people') {
+          <ul class="people">
+            @for (p of people(); track p.sid) {
+              <li [class.me]="p.isLocal">
+                <hlm-avatar class="ava">
+                  <span hlmAvatarFallback>{{ p.initial }}</span>
+                </hlm-avatar>
+                <span class="nm">
+                  {{ p.name }}
+                  @if (p.isLocal) { <em>(شما)</em> }
+                </span>
+                <app-icon
+                  class="ind"
+                  [class.muted]="!p.mic"
+                  [name]="p.mic ? 'mic' : 'mic-off'"
+                  [title]="p.mic ? 'میکروفون روشن' : 'میکروفون خاموش'"
+                />
+                <app-icon
+                  class="ind"
+                  [class.muted]="!p.cam"
+                  [name]="p.cam ? 'video' : 'video-off'"
+                  [title]="p.cam ? 'دوربین روشن' : 'دوربین خاموش'"
+                />
+              </li>
+            }
+          </ul>
+        } @else {
+          <app-chat-panel />
+        }
+      </aside>
+    }
+  </div>
 
   <footer class="controls">
     <button
       class="ctl"
       [class.off]="!rs.micEnabled()"
       (click)="rs.toggleMic()"
-      title="Toggle microphone"
+      [title]="rs.micEnabled() ? 'قطع صدا' : 'وصل صدا'"
     >
-      <span class="ico">{{ rs.micEnabled() ? '🎙' : '🔇' }}</span>
-      <span class="lbl">mic</span>
+      <app-icon class="ico" [name]="rs.micEnabled() ? 'mic' : 'mic-off'" />
+      <span class="lbl">{{ rs.micEnabled() ? 'قطع صدا' : 'وصل صدا' }}</span>
     </button>
 
     <button
       class="ctl"
       [class.off]="!rs.camEnabled()"
       (click)="rs.toggleCamera()"
-      title="Toggle camera"
+      title="روشن/خاموش کردن دوربین"
     >
-      <span class="ico">{{ rs.camEnabled() ? '📹' : '🚫' }}</span>
-      <span class="lbl">cam</span>
+      <app-icon class="ico" [name]="rs.camEnabled() ? 'video' : 'video-off'" />
+      <span class="lbl">دوربین</span>
     </button>
 
     <button
       class="ctl"
       [class.active]="rs.screenShareEnabled()"
       (click)="rs.toggleScreenShare()"
-      title="Share screen"
+      title="اشتراک‌گذاری صفحه"
     >
-      <span class="ico">🖥</span>
-      <span class="lbl">share</span>
+      <app-icon class="ico" name="screen-share" />
+      <span class="lbl">اشتراک‌گذاری</span>
     </button>
 
-    <button class="ctl leave" (click)="leave()" title="Leave call">
-      <span class="ico">⎋</span>
-      <span class="lbl">leave</span>
+    <button
+      class="ctl"
+      [class.active]="sidebarOpen()"
+      (click)="toggleSidebar()"
+      title="شرکت‌کنندگان و گفتگو"
+    >
+      <app-icon class="ico" name="chat" />
+      <span class="lbl">گفتگو</span>
+      @if (rs.unreadCount() > 0 && !sidebarOpen()) {
+        <span hlmBadge class="badge">{{ rs.unreadCount() | faNumber }}</span>
+      }
+    </button>
+
+    <hlm-separator orientation="vertical" class="divider" />
+
+    <button class="ctl leave" (click)="leave()" title="خروج از جلسه">
+      <app-icon class="ico" name="hangup" />
+      <span class="lbl">خروج</span>
     </button>
   </footer>
 </div>

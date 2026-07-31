@@ -1,0 +1,77 @@
+:host {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  min-height: 0;
+}
+
+.log {
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.empty {
+  margin: auto 0;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.9;
+  color: var(--outline);
+}
+
+.msg {
+  max-width: 88%;
+  align-self: flex-start;
+  padding: 9px 12px;
+  border-radius: var(--rk-radius-sm);
+  background: var(--surface-container-lowest);
+  border: 1px solid var(--outline-variant);
+}
+.msg.mine {
+  align-self: flex-end;
+  background: var(--primary-container);
+  border-color: transparent;
+}
+
+.who {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+
+.body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.at {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--on-surface-variant);
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.composer {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid var(--outline-variant);
+}
+
+.composer input {
+  flex: 1;
+  min-width: 0;
+}
+.composer button app-icon {
+  --icon-size: 19px;
+  /* The paper plane points along the reading direction. */
+  transform: scaleX(-1);
+}
+
