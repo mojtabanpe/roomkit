@@ -227,9 +227,11 @@ Target: **roomkit.ir** on a VPS at `45.159.149.10`. The stack is
   process *per port*, which took the VPS off the network mid-deploy. Do not put
   a `ports:` block back on that service. Consequences: nginx reaches signalling
   via `host.docker.internal` (hence the `extra_hosts` entry on web), and 7880 is
-  now bound on the host — it must stay closed in the firewall, with only 7881,
-  5349 and 50000–60000/udp open. Keys come from `LIVEKIT_KEYS` in the
-  environment, never the config file.
+  now bound on the host — it must stay closed in the firewall. Open 7881/tcp,
+  5349/tcp, 50000–60000/udp (ICE) **and 30000–40000/udp** — that last range is
+  TURN's relay allocation range, which LiveKit logs on startup and which is easy
+  to miss because it appears nowhere in the config file. Keys come from
+  `LIVEKIT_KEYS` in the environment, never the config file.
 - **Server-side state** lives in `/opt/roomkit/.env`, which the deploy rsync
   explicitly excludes. Template: `deploy/.env.production.example`.
 - **Migrations still do not exist.** `synchronize` is off when

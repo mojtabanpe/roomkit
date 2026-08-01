@@ -148,7 +148,9 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_deploy -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" \
             'for i in $(seq 1 20); do
-               code=$(curl -sk -o /dev/null -w "%{http_code}" -H "Host: roomkit.ir" https://localhost/api || true)
+               # Trailing slash matters: /api gets a 301 to /api/ from the
+               # prefix location, and this check does not follow redirects.
+               code=$(curl -sk -o /dev/null -w "%{http_code}" -H "Host: roomkit.ir" https://localhost/api/ || true)
                [ "$code" = "200" ] && echo "api is up" && exit 0
                sleep 3
              done
