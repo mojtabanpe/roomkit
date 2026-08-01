@@ -232,6 +232,14 @@ Target: **roomkit.ir** on a VPS at `45.159.149.10`. The stack is
   TURN's relay allocation range, which LiveKit logs on startup and which is easy
   to miss because it appears nowhere in the config file. Keys come from
   `LIVEKIT_KEYS` in the environment, never the config file.
+- **ufw and host networking interact badly.** With livekit on the host network,
+  nginx reaches signalling from the docker bridge, and ufw counts that as an
+  inbound connection — `default deny (incoming)` silently drops it, nginx
+  answers 504, and the browser reports only "WebSocket is closed before the
+  connection is established". The host itself still answers on
+  `127.0.0.1:7880`, which makes it look fine from an SSH session. The bridge
+  needs an explicit rule:
+  `ufw allow from 172.16.0.0/12 to any port 7880 proto tcp`.
 - **Server-side state** lives in `/opt/roomkit/.env`, which the deploy rsync
   explicitly excludes. Template: `deploy/.env.production.example`.
 - **Migrations still do not exist.** `synchronize` is off when
