@@ -162,6 +162,10 @@ via `@nestjs/config`:
 
 - `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_URL` (wss:// or ws://)
 - `CORS_ORIGIN` (default `http://localhost:4200`), `PORT` (default `3000`)
+- `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN` (see the Postgres section)
+
+Never commit real values. `.env` is gitignored; `.env.example` carries
+placeholders only, and CI credentials belong in the CI provider's secret store.
 
 For LiveKit Cloud, copy the key/secret and project URL from
 https://cloud.livekit.io. For local dev, install and run the LiveKit server
@@ -176,3 +180,21 @@ LiveKit CLI (docs, rooms, tokens) — it does not run a server.
 - Build all: `npx nx run-many -t build`
 - Lint all: `npx nx run-many -t lint`
 - Always run tasks through `nx`, never the underlying tooling directly.
+
+## Deployment
+
+Target: **roomkit.ir** on a VPS at `45.159.149.10`. Nothing is deployed yet and
+there is no deploy pipeline — `.github/workflows/ci.yml` only runs checks.
+
+Before writing one, note:
+
+- The workflow triggers on `main`, but the repo's branch is `master`, and it
+  runs `typecheck`/`e2e` targets — verify those exist before depending on them.
+  `nx run-many -t lint test build` is the combination known green.
+- TypeORM runs `synchronize: true` outside production. **Generate migrations
+  before the first deploy**, or a schema change will silently drop data.
+- HTTPS is not optional: `getUserMedia` (camera/mic) is refused on plain HTTP,
+  so the site is unusable without TLS on roomkit.ir.
+- Four things must run in production: the Angular static bundle, the NestJS
+  API, Postgres (`compose.yaml`), and a LiveKit server. Set `CORS_ORIGIN` to
+  `https://roomkit.ir` and mint a fresh `JWT_SECRET` for the environment.

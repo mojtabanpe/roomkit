@@ -24,5 +24,16 @@
 
 # Project guidance
 
-See @AGENTS.md for LiveKit usage, project layout, environment variables, and
-commands.
+See @AGENTS.md for LiveKit usage, project layout, localization, theming,
+database/auth, the Spartan UI library, environment variables, and commands.
+
+## Answer in Persian
+
+The product and the user are Persian. Reply in Persian; keep code, commands,
+paths and identifiers in English inside the Persian prose.
+
+## Secrets
+
+Never write credentials into the repo — not into `.env.example`, workflows,
+docs, or comments. `.env` is gitignored and holds real values; everything
+committed uses placeholders. CI credentials belong in GitHub Actions secrets.
