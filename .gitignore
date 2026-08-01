@@ -56,3 +56,5 @@ vitest.config.*.timestamp*
 # Local env
 .env
 .env.local
+
+graphify-out

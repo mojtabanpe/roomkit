@@ -1,0 +1,96 @@
+# Production stack for roomkit.ir. Lives on the VPS at /opt/roomkit alongside a
+# .env file (never committed — see .env.example for the keys it must contain).
+#
+#   docker compose -f compose.prod.yaml pull
+#   docker compose -f compose.prod.yaml up -d
+#
+# The deploy workflow (.github/workflows/deploy.yml) runs exactly that after
+# pushing fresh images to GHCR.
+
+name: roomkit
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Not published: only the api container talks to it.
+
+  api:
+    image: ${API_IMAGE}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      # First boot only — see the "Migrations" note in AGENTS.md.
+      DB_SYNCHRONIZE: ${DB_SYNCHRONIZE:-false}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
+      LIVEKIT_URL: ${LIVEKIT_URL}
+    expose:
+      - '3000'
+
+  web:
+    image: ${WEB_IMAGE}
+    restart: unless-stopped
+    depends_on:
+      - api
+      - livekit
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - letsencrypt:/etc/letsencrypt:ro
+      - certbot-www:/var/www/certbot:ro
+
+  livekit:
+    image: livekit/livekit-server:latest
+    restart: unless-stopped
+    command: --config /etc/livekit.yaml
+    environment:
+      # LiveKit reads its key map from this env var; keeps secrets out of the
+      # mounted config file.
+      LIVEKIT_KEYS: '${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}'
+    volumes:
+      - ./livekit/livekit.yaml:/etc/livekit.yaml:ro
+      # TURN/TLS reuses the certificate certbot issued for the domain.
+      - letsencrypt:/etc/letsencrypt:ro
+    ports:
+      # Signalling (7880) goes through nginx; these carry media and must reach
+      # the host directly. Open them in the VPS firewall too.
+      - '7881:7881'
+      - '5349:5349'
+      - '50000-60000:50000-60000/udp'
+    expose:
+      - '7880'
+
+  certbot:
+    image: certbot/certbot:latest
+    restart: unless-stopped
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    # Certbot's own renew is a one-shot; loop it so the container is the cron.
+    entrypoint: /bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done'
+
+volumes:
+  pgdata:
+  letsencrypt:
+  certbot-www:

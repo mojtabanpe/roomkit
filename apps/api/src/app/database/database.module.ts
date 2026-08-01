@@ -17,8 +17,13 @@ export const ENTITIES = [User, Room, Message, MeetingSession];
         type: 'postgres' as const,
         url: config.get<string>('DATABASE_URL'),
         entities: ENTITIES,
-        // Fine for this stage; switch to generated migrations before deploying.
-        synchronize: config.get<string>('NODE_ENV') !== 'production',
+        // Auto-schema outside production. Production defaults to off — but the
+        // first deploy has no migrations to run against an empty database, so
+        // DB_SYNCHRONIZE=true is the documented one-time escape hatch until
+        // generated migrations exist (see AGENTS.md → Deployment).
+        synchronize:
+          config.get<string>('NODE_ENV') !== 'production' ||
+          config.get<string>('DB_SYNCHRONIZE') === 'true',
         logging: false,
       }),
     }),

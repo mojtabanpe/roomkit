@@ -181,20 +181,62 @@ LiveKit CLI (docs, rooms, tokens) — it does not run a server.
 - Lint all: `npx nx run-many -t lint`
 - Always run tasks through `nx`, never the underlying tooling directly.
 
+## CI/CD
+
+Two workflows, both on `master` (not `main` — the repo has no `main`):
+
+- `.github/workflows/ci.yml` — `check` runs `nx affected -t lint test build`;
+  `e2e` runs `api-e2e` against a Postgres service container. `api-e2e` boots the
+  real Nest app, so it needs the whole config (`DATABASE_URL`, `JWT_SECRET`,
+  `LIVEKIT_*`) — those are throwaway CI literals, not secrets. There is no
+  `typecheck` target in this workspace; don't add it back to the task list
+  without generating one first.
+- `.github/workflows/deploy.yml` — triggered by `workflow_run` on a *green* CI,
+  plus `workflow_dispatch`. Builds `apps/{api,web}/Dockerfile`, pushes to
+  `ghcr.io/<repo>-{api,web}` tagged `latest` + commit SHA, then over SSH rsyncs
+  `deploy/` to `/opt/roomkit`, rewrites `API_IMAGE`/`WEB_IMAGE` in the server's
+  `.env` to that SHA, and `docker compose up -d`. Rolling back = re-run with an
+  older SHA in those two lines.
+
+Node is pinned to **24** in both Dockerfiles and CI. Node 20 ships npm 10, which
+resolves this lockfile differently (`chokidar`/`readdirp` come out missing) and
+fails `npm ci`; don't downgrade without regenerating the lockfile.
+
+Required repository secrets: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`,
+optionally `SSH_PORT`. GHCR uses the built-in `GITHUB_TOKEN`. The `deploy` job
+targets the `production` environment, so adding required reviewers there gives
+you a manual gate.
+
 ## Deployment
 
-Target: **roomkit.ir** on a VPS at `45.159.149.10`. Nothing is deployed yet and
-there is no deploy pipeline — `.github/workflows/ci.yml` only runs checks.
+Target: **roomkit.ir** on a VPS at `45.159.149.10`. The stack is
+`deploy/compose.prod.yaml`: postgres, api, web, livekit, certbot.
 
-Before writing one, note:
+- **web is the edge.** The image is nginx with the Angular bundle baked in plus
+  `deploy/nginx/roomkit.conf`: it terminates TLS, proxies `/api` → `api:3000`
+  and `livekit.roomkit.ir` → `livekit:7880` (websocket upgrade). HTTPS is not
+  optional — `getUserMedia` is refused outside a secure context.
+- **TLS** is certbot/webroot into a shared volume; the certbot container loops
+  `certbot renew` every 12h. nginx will not start without a certificate file, so
+  the first time on a fresh host run `deploy/init-letsencrypt.sh <email>`, which
+  seeds a self-signed placeholder, gets the real cert for all three names
+  (`roomkit.ir`, `www`, `livekit`) and reloads.
+- **LiveKit is self-hosted** here (`deploy/livekit/livekit.yaml`). Signalling
+  goes through nginx, but media does not: TCP 7881, TURN/TLS 5349 and UDP
+  50000–60000 are published straight to the host and must be open in the VPS
+  firewall. Keys come from `LIVEKIT_KEYS` in the environment, never the config
+  file.
+- **Server-side state** lives in `/opt/roomkit/.env`, which the deploy rsync
+  explicitly excludes. Template: `deploy/.env.production.example`.
+- **Migrations still do not exist.** `synchronize` is off when
+  `NODE_ENV=production`, so an empty database stays empty; `DB_SYNCHRONIZE=true`
+  is the documented one-time override for the very first boot. Generate real
+  migrations before the schema changes again, or a later change will silently
+  drop data.
 
-- The workflow triggers on `main`, but the repo's branch is `master`, and it
-  runs `typecheck`/`e2e` targets — verify those exist before depending on them.
-  `nx run-many -t lint test build` is the combination known green.
-- TypeORM runs `synchronize: true` outside production. **Generate migrations
-  before the first deploy**, or a schema change will silently drop data.
-- HTTPS is not optional: `getUserMedia` (camera/mic) is refused on plain HTTP,
-  so the site is unusable without TLS on roomkit.ir.
-- Four things must run in production: the Angular static bundle, the NestJS
-  API, Postgres (`compose.yaml`), and a LiveKit server. Set `CORS_ORIGIN` to
-  `https://roomkit.ir` and mint a fresh `JWT_SECRET` for the environment.
+The API image installs from the manifest webpack generates
+(`generatePackageJson`), not the root `package.json`. Two consequences: a
+runtime dependency parked in `devDependencies` will be missing from the image
+(this is why `@nestjs/config` had to move), and dependencies loaded by name
+rather than imported are invisible to it — `pg` is installed explicitly in
+`apps/api/Dockerfile` for exactly that reason.
