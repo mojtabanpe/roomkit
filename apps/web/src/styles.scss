@@ -54,8 +54,14 @@ color-scheme: light;
 --on-error-container: #93000a;
 
 /* ---- Typography ----
-Plus Jakarta Sans carries Latin; Vazirmatn picks up every Persian glyph. */
---font: 'Plus Jakarta Sans', 'Inter', 'Vazirmatn', system-ui, sans-serif;
+Vazirmatn leads deliberately. A line box takes its metrics from the FIRST font
+in the stack, not from the font that actually renders the glyphs. With Plus
+Jakarta Sans first (ascent 15 / descent 3) the baseline sat so low that Persian
+text rendered by Vazirmatn hung ~4.5px below centre in every fixed-height
+control. Leading with the font that renders ~all of our text fixes that
+globally; Latin still falls through to Plus Jakarta Sans where Vazirmatn has no
+glyph, and `.latin` opts fragments back in explicitly. */
+--font: 'Vazirmatn', 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
 
 /* Scale. Persian is cursive, so the tracking from the spec is dropped —
 negative letter-spacing breaks the joins between letters. */

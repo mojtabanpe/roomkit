@@ -1,45 +1,26 @@
 import { Component, input } from '@angular/core';
 
 /**
- * The روم‌کیت lockup: two overlapping rounded squares (a solid indigo→blue
- * panel with a translucent cyan panel laid over it) plus the wordmark.
+ * The روم‌کیت lockup, rendered from the supplied brand artwork.
  *
- * Rebuilt as inline SVG rather than a raster asset so it stays sharp at any
- * size and inherits the page's text colour for the wordmark.
+ * The source file is a stacked lockup (mark above wordmark). It is split into
+ * `logo-mark.png` and `logo-wordmark.png` in `public/` so the same artwork can
+ * also sit horizontally in tight bars — see `tools/` note in AGENTS.md for how
+ * the pieces were cut.
  */
 @Component({
   selector: 'app-logo',
   template: `
-    <span class="logo" [style.--mark-size.px]="size()">
-      <svg class="mark" viewBox="0 0 120 120" role="img" aria-label="روم‌کیت">
-        <defs>
-          <linearGradient [attr.id]="backId" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#5b3ff0" />
-            <stop offset="0.55" stop-color="#3d7ef2" />
-            <stop offset="1" stop-color="#1fb6f5" />
-          </linearGradient>
-          <linearGradient [attr.id]="frontId" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#3fd4ff" />
-            <stop offset="1" stop-color="#b7f6ff" />
-          </linearGradient>
-        </defs>
-
-        <rect x="6" y="2" width="78" height="78" rx="23" [attr.fill]="backUrl" />
-        <rect
-          x="36"
-          y="32"
-          width="78"
-          height="78"
-          rx="23"
-          [attr.fill]="frontUrl"
-          fill-opacity="0.78"
-          stroke="#ffffff"
-          stroke-opacity="0.35"
-        />
-      </svg>
-
+    <span class="logo" [class.stacked]="stacked()" [style.--mark-size.px]="size()">
+      <img
+        class="mark"
+        src="logo-mark.png"
+        [attr.alt]="showWord() ? '' : 'روم‌کیت'"
+        [attr.aria-hidden]="showWord() ? 'true' : null"
+        decoding="async"
+      />
       @if (showWord()) {
-        <span class="word">روم‌کیت</span>
+        <img class="word" src="logo-wordmark.png" alt="روم‌کیت" decoding="async" />
       }
     </span>
   `,
@@ -47,31 +28,35 @@ import { Component, input } from '@angular/core';
     .logo {
       display: inline-flex;
       align-items: center;
-      gap: 10px;
-      line-height: 1;
+      gap: 0.34em;
+      font-size: var(--mark-size, 28px);
+      line-height: 0;
+    }
+    .logo.stacked {
+      flex-direction: column;
+      gap: 0.5em;
     }
     .mark {
       width: var(--mark-size, 28px);
-      height: var(--mark-size, 28px);
+      height: auto;
       flex: none;
       display: block;
     }
+    /* Sized off the mark so the two pieces stay in proportion at every size. */
     .word {
-      font-weight: 800;
-      font-size: calc(var(--mark-size, 28px) * 0.72);
-      letter-spacing: normal;
-      color: inherit;
+      height: calc(var(--mark-size, 28px) * 0.5);
+      width: auto;
+      flex: none;
+      display: block;
+    }
+    .logo.stacked .word {
+      height: calc(var(--mark-size, 28px) * 0.42);
     }
   `,
 })
 export class Logo {
   readonly size = input(28);
   readonly showWord = input(true);
-
-  /** Unique gradient ids — several logos can share one page. */
-  private readonly uid = Math.random().toString(36).slice(2, 8);
-  protected readonly backId = `lk-back-${this.uid}`;
-  protected readonly frontId = `lk-front-${this.uid}`;
-  protected readonly backUrl = `url(#${this.backId})`;
-  protected readonly frontUrl = `url(#${this.frontId})`;
+  /** Mark above wordmark, as in the source artwork. */
+  readonly stacked = input(false);
 }
