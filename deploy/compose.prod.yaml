@@ -56,6 +56,10 @@ services:
     ports:
       - '80:80'
       - '443:443'
+    # livekit runs on the host network, so nginx reaches it through the bridge
+    # gateway rather than by service name.
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     volumes:
       - letsencrypt:/etc/letsencrypt:ro
       - certbot-www:/var/www/certbot:ro
@@ -64,6 +68,11 @@ services:
     image: livekit/livekit-server:latest
     restart: unless-stopped
     command: --config /etc/livekit.yaml
+    # Host networking, as LiveKit's own deployment guide requires. Publishing
+    # the 50000-60000 UDP media range through docker's port mapping spawns one
+    # docker-proxy process per port — ten thousand of them — which takes the
+    # machine down before the container ever starts.
+    network_mode: host
     environment:
       # LiveKit reads its key map from this env var; keeps secrets out of the
       # mounted config file.
@@ -72,14 +81,9 @@ services:
       - ./livekit/livekit.yaml:/etc/livekit.yaml:ro
       # TURN/TLS reuses the certificate certbot issued for the domain.
       - letsencrypt:/etc/letsencrypt:ro
-    ports:
-      # Signalling (7880) goes through nginx; these carry media and must reach
-      # the host directly. Open them in the VPS firewall too.
-      - '7881:7881'
-      - '5349:5349'
-      - '50000-60000:50000-60000/udp'
-    expose:
-      - '7880'
+    # No `ports:` — host networking means 7880/7881/5349 and the UDP range are
+    # already on the host. Only 7881, 5349 and 50000-60000/udp belong in the
+    # firewall; 7880 is signalling and must stay private behind nginx.
 
   certbot:
     image: certbot/certbot:latest

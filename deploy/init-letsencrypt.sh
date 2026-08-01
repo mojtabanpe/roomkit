@@ -29,7 +29,10 @@ echo "==> seeding a self-signed placeholder so nginx can boot"
 "
 
 echo "==> starting the edge"
-"${COMPOSE[@]}" up -d web
+# --no-deps: the challenge only needs nginx answering on :80. Pulling api and
+# livekit up as well would make TLS bootstrap depend on the whole stack being
+# healthy, which it is not yet on a fresh host.
+"${COMPOSE[@]}" up -d --no-deps web
 
 echo "==> requesting the real certificate"
 "${COMPOSE[@]}" run --rm --entrypoint sh certbot -c "
