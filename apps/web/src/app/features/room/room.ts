@@ -92,7 +92,7 @@ export class Room implements OnInit, OnDestroy {
 
   /** mm:ss (or hh:mm:ss past an hour) in Persian digits. */
   protected readonly elapsed = computed(() => {
-    const start = this.rs.joinedAt();
+    const start = this.rs.sessionStartedAt();
     if (!start) return '';
     const total = Math.max(0, Math.floor((this.now() - start) / 1000));
     const parts =

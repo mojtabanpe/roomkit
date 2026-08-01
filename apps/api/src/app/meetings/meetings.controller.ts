@@ -58,7 +58,7 @@ export class MeetingsController {
   start(
     @RoomCtx() claims: RoomClaims,
     @CurrentUser() user?: AuthUser,
-  ): Promise<{ id: string }> {
+  ): Promise<{ id: string; startedAt: string }> {
     return this.meetings.startSession(claims, user?.id ?? null);
   }
 

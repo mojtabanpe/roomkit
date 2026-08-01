@@ -40,9 +40,10 @@ export class MeetingsService {
     );
   }
 
-  startSession(roomToken: string): Promise<{ id: string }> {
+  /** `startedAt` is when the meeting began, not this participant's session. */
+  startSession(roomToken: string): Promise<{ id: string; startedAt: string }> {
     return firstValueFrom(
-      this.http.post<{ id: string }>(
+      this.http.post<{ id: string; startedAt: string }>(
         '/api/meetings/sessions',
         {},
         { headers: this.headers(roomToken) },

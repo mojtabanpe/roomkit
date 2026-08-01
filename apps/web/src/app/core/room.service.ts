@@ -55,8 +55,15 @@ export class RoomService {
   readonly messages = signal<ChatMessage[]>([]);
   /** Unread count while the chat tab is not the visible one. */
   readonly unreadCount = signal(0);
-  /** When the local participant connected, for the call timer. */
+  /** When the local participant connected. */
   readonly joinedAt = signal<number | null>(null);
+  /**
+   * When the *meeting* started — the earliest join time among everyone in the
+   * room, so the timer reads the same for a latecomer as for the first person
+   * in. The value comes from LiveKit's server-stamped `Participant.joinedAt`,
+   * not from local clocks, so it is identical on every client.
+   */
+  readonly sessionStartedAt = signal<number | null>(null);
 
   private readonly tokens = inject(TokenService);
   private readonly meetings = inject(MeetingsService);
@@ -94,6 +101,7 @@ export class RoomService {
 
     await lkRoom.connect(serverUrl, token);
     this.joinedAt.set(Date.now());
+    this.syncSessionStart();
 
     // Losing a device must not cost you the room: someone with no webcam, or
     // who denied the permission prompt, still joins — just muted.
@@ -186,8 +194,13 @@ export class RoomService {
   private async openSession(): Promise<void> {
     if (!this.roomToken) return;
     try {
-      const { id } = await this.meetings.startSession(this.roomToken);
+      const { id, startedAt } = await this.meetings.startSession(this.roomToken);
       this.sessionId = id;
+
+      // The API knows about people who were here and already left; LiveKit
+      // only knows who is here now. Whichever origin is earlier wins.
+      const at = Date.parse(startedAt);
+      if (!Number.isNaN(at)) this.adoptSessionStart(at);
     } catch {
       // Attendance tracking is best-effort.
     }
@@ -261,6 +274,7 @@ export class RoomService {
     this.roomToken = null;
     this.sessionId = null;
     this.joinedAt.set(null);
+    this.sessionStartedAt.set(null);
     this.tiles.set([]);
     this.connectionState.set(ConnectionState.Disconnected);
   }
@@ -268,6 +282,7 @@ export class RoomService {
   private wireEvents(room: Room): void {
     const refresh = () => {
       this.rebuildTiles();
+      this.syncSessionStart();
       this.bump();
     };
 
@@ -288,6 +303,32 @@ export class RoomService {
         this.tiles.set([]);
         this.connectionState.set(ConnectionState.Disconnected);
       });
+  }
+
+  /** Earliest `joinedAt` among everyone currently in the room. */
+  private syncSessionStart(): void {
+    if (!this.room) return;
+    const times = [
+      this.room.localParticipant,
+      ...this.room.remoteParticipants.values(),
+    ]
+      .map((p) => p.joinedAt?.getTime())
+      .filter((t): t is number => typeof t === 'number' && t > 0);
+
+    // No server timestamps yet (older server, or info not delivered): fall
+    // back to our own connect time rather than showing a blank timer.
+    const earliest = times.length ? Math.min(...times) : this.joinedAt();
+    if (earliest != null) this.adoptSessionStart(earliest);
+  }
+
+  /**
+   * The meeting's origin only ever moves earlier. When the person who opened
+   * the meeting leaves, the earliest remaining join jumps forward, and letting
+   * the timer follow would make a long call look like it just restarted.
+   */
+  private adoptSessionStart(at: number): void {
+    const current = this.sessionStartedAt();
+    if (current == null || at < current) this.sessionStartedAt.set(at);
   }
 
   private rebuildTiles(): void {
