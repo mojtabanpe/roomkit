@@ -13,7 +13,8 @@ export class MeetingSession {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'varchar', length: 64 })
+  /** The LiveKit room name, which for a tenant's room carries its key prefix. */
+  @Column({ type: 'varchar', length: 128 })
   roomSlug!: string;
 
   @Column({ type: 'varchar', length: 64 })

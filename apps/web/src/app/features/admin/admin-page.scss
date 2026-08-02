@@ -1,0 +1,274 @@
+:host {
+  display: block;
+}
+
+.page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 22px clamp(16px, 4vw, 48px) 8vh;
+  max-width: 1080px;
+  margin-inline: auto;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.brand {
+  display: inline-flex;
+  color: inherit;
+  text-decoration: none;
+}
+
+.card {
+  padding: 24px;
+  border-radius: var(--rk-radius);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border-strong);
+  box-shadow: var(--shadow);
+}
+
+.gate {
+  align-self: center;
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-block-start: 6vh;
+}
+
+h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+h2 {
+  margin: 0 0 14px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.sub {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.9;
+  color: var(--on-surface-variant);
+}
+
+.field,
+.control {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field > span,
+.control > span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--on-surface-variant);
+}
+
+small {
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--outline);
+}
+
+/* Native select, themed to match the helm inputs around it. */
+.select {
+  height: 38px;
+  padding-inline: 10px;
+  border-radius: var(--rk-radius-sm, 10px);
+  border: 1px solid var(--outline-variant);
+  background: var(--surface);
+  color: var(--on-surface);
+  font: inherit;
+  font-size: 14px;
+}
+
+.new-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 1fr auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.empty {
+  margin: 0;
+  padding: 18px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--outline);
+}
+
+.row {
+  padding: 0;
+  overflow: hidden;
+}
+
+.row-head {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.row-head:hover {
+  background: var(--surface-container-low, rgba(0, 0, 0, 0.03));
+}
+
+.ident {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ident strong {
+  font-size: 15px;
+}
+
+.badges {
+  display: flex;
+  gap: 6px;
+}
+
+.balance {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  font-size: 13px;
+}
+
+.remaining {
+  font-weight: 600;
+}
+
+.remaining.spent {
+  color: var(--error);
+}
+
+.unlimited {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.drawer {
+  padding: 4px 20px 20px;
+  border-top: 1px solid var(--outline-variant);
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 18px;
+  padding-top: 18px;
+}
+
+.inline {
+  display: flex;
+  gap: 8px;
+}
+
+.inline input {
+  min-width: 0;
+}
+
+.keys {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.keys-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.key {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--rk-radius-sm, 10px);
+  border: 1px solid var(--outline-variant);
+  font-size: 13px;
+}
+
+.key.revoked {
+  opacity: 0.55;
+}
+
+.key-meta {
+  flex: 1;
+  color: var(--outline);
+  font-size: 12px;
+}
+
+.fresh .secret {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.fresh code {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface-container-high, rgba(0, 0, 0, 0.06));
+  font-size: 12px;
+  word-break: break-all;
+}
+
+/* Latin fragments inside Persian prose need isolating or bidi reorders them. */
+.latin {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+@media (max-width: 760px) {
+  .new-grid,
+  .row-head {
+    grid-template-columns: 1fr;
+  }
+
+  .balance {
+    align-items: flex-start;
+  }
+}

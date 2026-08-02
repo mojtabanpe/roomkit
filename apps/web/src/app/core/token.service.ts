@@ -17,12 +17,19 @@ export interface JoinTokenResponse {
 export class TokenService {
   private readonly http = inject(HttpClient);
 
-  fetchToken(room: string, identity: string, name?: string): Promise<JoinTokenResponse> {
+  /** `passcode` is only read by the API for rooms marked private. */
+  fetchToken(
+    room: string,
+    identity: string,
+    name?: string,
+    passcode?: string,
+  ): Promise<JoinTokenResponse> {
     return firstValueFrom(
       this.http.post<JoinTokenResponse>('/api/livekit/token', {
         room,
         identity,
         name,
+        passcode,
       }),
     );
   }

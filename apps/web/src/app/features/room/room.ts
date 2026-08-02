@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   Component,
   OnDestroy,
@@ -27,6 +28,8 @@ interface JoinState {
   name?: string;
   mic: boolean;
   cam: boolean;
+  /** Set by the lobby for private rooms. Never carried in the URL. */
+  passcode?: string;
 }
 
 type SideTab = 'people' | 'chat';
@@ -137,8 +140,21 @@ export class Room implements OnInit, OnDestroy {
       await this.rs.join(this.room(), state.identity, state.name, {
         mic: state.mic ?? true,
         cam: state.cam ?? true,
+        passcode: state.passcode,
       });
     } catch (err) {
+      // A wrong passcode is a dead end on this screen — there is no field here
+      // to correct it in — so bounce back to the form rather than stranding
+      // the user in an empty room with an error.
+      if (err instanceof HttpErrorResponse && err.status === 403) {
+        this.router.navigate(['/join'], {
+          queryParams: { room: this.room(), passcode: 'wrong' },
+          // Carry the name back so a guest does not retype it to fix a typo
+          // in the passcode.
+          state: { name: state.name },
+        });
+        return;
+      }
       this.rs.error.set(
         err instanceof Error ? err.message : 'اتصال به اتاق ناموفق بود.',
       );

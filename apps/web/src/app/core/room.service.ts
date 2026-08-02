@@ -80,13 +80,18 @@ export class RoomService {
     room: string,
     identity: string,
     name: string | undefined,
-    opts: { mic: boolean; cam: boolean },
+    opts: { mic: boolean; cam: boolean; passcode?: string },
   ): Promise<void> {
     this.error.set(null);
     this.deviceNotice.set(null);
     this.messages.set([]);
     this.unreadCount.set(0);
-    const { token, serverUrl } = await this.tokens.fetchToken(room, identity, name);
+    const { token, serverUrl } = await this.tokens.fetchToken(
+      room,
+      identity,
+      name,
+      opts.passcode,
+    );
     this.roomToken = token;
 
     const lkRoom = new Room({

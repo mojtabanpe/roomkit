@@ -15,6 +15,12 @@ interface SavedRoom {
   name: string;
 }
 
+interface RoomLookup {
+  slug: string;
+  name: string;
+  visibility: 'public' | 'private';
+}
+
 @Component({
   selector: 'app-lobby',
   imports: [FormsModule, RouterLink, Logo, Icon, HlmButton, HlmInput, HlmLabel],
@@ -27,8 +33,16 @@ export class Lobby {
   private readonly http = inject(HttpClient);
   protected readonly auth = inject(AuthService);
 
-  /** Signed-in users get their account name; guests type one. */
-  protected name = signal(this.auth.user()?.displayName ?? '');
+  /**
+   * Signed-in users get their account name; guests type one. A name handed
+   * back in navigation state wins — that is the room screen returning us here
+   * after a rejected passcode.
+   */
+  protected name = signal(
+    (history.state as { name?: string } | undefined)?.name ??
+      this.auth.user()?.displayName ??
+      '',
+  );
   protected room = signal(
     this.route.snapshot.queryParamMap.get('room') ?? '',
   );
@@ -37,8 +51,20 @@ export class Lobby {
 
   protected readonly savedRooms = signal<SavedRoom[]>([]);
 
+  protected passcode = signal('');
+  /** Null until we have looked the room up; drives the passcode field. */
+  protected readonly lookup = signal<RoomLookup | null>(null);
+  protected readonly checking = signal(false);
+
+  /** Set when the room screen bounced us back for a rejected passcode. */
+  protected readonly passcodeRejected = signal(
+    this.route.snapshot.queryParamMap.get('passcode') === 'wrong',
+  );
+
   constructor() {
     if (this.auth.isLoggedIn()) void this.loadSavedRooms();
+    // A room may already be filled in from ?room= on a bounced direct link.
+    if (this.room().trim()) void this.checkRoom();
   }
 
   private async loadSavedRooms(): Promise<void> {
@@ -53,6 +79,42 @@ export class Lobby {
 
   protected useRoom(slug: string): void {
     this.room.set(slug);
+    void this.checkRoom();
+  }
+
+  /**
+   * Looks the room up so a private one can ask for its passcode *before* the
+   * user leaves this page. Without it the join succeeds as far as the router
+   * and then dies with a 403 inside the room screen, where there is nowhere to
+   * type the passcode.
+   *
+   * A 404 is the normal case, not an error: most rooms are ad-hoc and have no
+   * record at all.
+   */
+  protected async checkRoom(): Promise<void> {
+    const slug = this.slug(this.room());
+    if (!slug) {
+      this.lookup.set(null);
+      return;
+    }
+    if (this.lookup()?.slug === slug) return;
+
+    this.checking.set(true);
+    try {
+      this.lookup.set(
+        await firstValueFrom(
+          this.http.get<RoomLookup>(`/api/rooms/${encodeURIComponent(slug)}`),
+        ),
+      );
+    } catch {
+      this.lookup.set(null);
+    } finally {
+      this.checking.set(false);
+    }
+  }
+
+  protected isPrivate(): boolean {
+    return this.lookup()?.visibility === 'private';
   }
 
   protected suggestRoom(): void {
@@ -62,11 +124,14 @@ export class Lobby {
   }
 
   protected canJoin(): boolean {
+    if (this.checking()) return false;
+    if (this.isPrivate() && !this.passcode().trim()) return false;
     return this.name().trim().length > 0 && this.slug(this.room()).length > 0;
   }
 
   protected join(): void {
     if (!this.canJoin()) return;
+    this.passcodeRejected.set(false);
     const room = this.slug(this.room());
     const display = this.name().trim();
     const identity = `${this.slug(display) || 'guest'}-${Math.random()
@@ -79,6 +144,9 @@ export class Lobby {
         name: display,
         mic: this.mic(),
         cam: this.cam(),
+        // Travels in navigation state, never in the URL — a passcode in a
+        // query string ends up in history and in every referrer header.
+        passcode: this.isPrivate() ? this.passcode().trim() : undefined,
       },
     });
   }

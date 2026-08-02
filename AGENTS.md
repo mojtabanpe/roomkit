@@ -92,15 +92,43 @@ copy and the stored copy of one message dedupe against each other.
 
 ## Database & auth
 
-Postgres runs from `compose.yaml` (`docker compose up -d`); TypeORM maps four
-tables — `users`, `rooms`, `messages`, `meeting_sessions`. `synchronize` is on
-outside production; generate migrations before deploying.
+Postgres runs from `compose.yaml` (`docker compose up -d`); TypeORM maps eight
+tables — `users`, `rooms`, `messages`, `meeting_sessions`, plus `tenants`,
+`api_keys`, `tenant_balances`, `usage_events`.
+
+## Migrations
+
+Migrations own the schema **in every environment**, including development.
+`synchronize` is off by default. It used to be on in dev, and that is precisely
+what made `migration:generate` useless there: TypeORM had already applied the
+entity change, so the generated migration came out empty and dev drifted away
+from production silently.
+
+```
+npx nx run api:migration:generate --name=AddSomething
+npx nx run api:migration:run
+npx nx run api:migration:revert
+```
+
+Two things that will bite:
+
+- **New migrations must be added to `database/migrations/index.ts` by hand.**
+  The API ships as one webpack bundle, so TypeORM's usual glob finds nothing at
+  runtime — a migration that is not imported runs in dev and silently does not
+  run in production.
+- **`migration:generate` diffs against a live database**, so it only emits the
+  delta from whatever that database already has. To regenerate a full schema,
+  point `DATABASE_URL` at an empty scratch database, not at your dev one.
+
+`DB_SYNCHRONIZE=true` is still available as a local escape hatch, and it turns
+`migrationsRun` off — the two cannot both be on, or synchronize creates the
+tables the initial migration then tries to create again.
 
 Auth is email + password (bcrypt, cost 12) issuing a JWT. **Accounts are
 optional by design** — guests join with just a name, so almost every endpoint is
 `@OptionalAuth()` and must behave with `req.user` undefined.
 
-Two different credentials authorise the API, and mixing them up is the easy
+Four different credentials authorise the API, and mixing them up is the easy
 mistake:
 
 - **App JWT** (`Authorization: Bearer …`) — proves *who you are*. Only needed
@@ -109,6 +137,48 @@ mistake:
   verified with `TokenVerifier` against the LiveKit secret. This is what guards
   chat history and attendance, so guests work and nobody can post into a room
   they never joined by guessing its slug.
+- **Tenant API key** (`X-Api-Key`, `rk_live_<prefix>.<secret>`) — proves *which
+  platform* is calling `/api/v1/*`. Backend-only. Its own header rather than
+  `Authorization` so no request has to be sniffed to tell it from the app JWT.
+- **Admin token** (`X-Admin-Token`) — one shared secret in `ADMIN_TOKEN` that
+  guards tenant onboarding. Fails closed: unset means nobody gets in.
+
+## Platform tenants (white-label API)
+
+A tenant is a platform that ships its own UI and calls roomkit for credentials
+and metering. `apps/api/src/app/platform/` is the API they call; the rest of
+the machinery is in `tenants/` and `usage/`.
+
+- **Rooms are namespaced.** LiveKit has one flat room namespace, so a tenant's
+  rooms are `"<tenantKey>~<slug>"` (`tenants/room-name.ts`). `~` is safe as the
+  separator only because the slug rule forbids it — which is also why
+  `JoinTokenDto` validates against that rule. Drop that validation and a guest
+  can name `acme~standup` on the free first-party endpoint and walk into a
+  paying customer's call.
+- **`Room.ownerId` and `Room.tenantId` are both nullable** and exactly one is
+  set. Slug uniqueness therefore needs two indexes: a composite one per tenant,
+  plus a partial unique index for first-party rooms, because Postgres treats
+  every NULL as distinct and the composite index would not constrain them.
+- **Private rooms carry a bcrypt passcode.** It guards the *public* join path;
+  a tenant minting through `/api/v1` already owns the room and is not asked.
+  On the first-party side the lobby looks the room up on blur and reveals a
+  passcode field before navigating — the room screen has nowhere to type one,
+  so a 403 there bounces back to `/join?passcode=wrong` carrying the name in
+  navigation state. The passcode itself never goes in the URL.
+- **Usage is only ever recorded from LiveKit webhooks**, never from the
+  browser. `meeting_sessions` is written by the client (`syncSessionStart`) to
+  power "recent meetings" — a tenant with its own UI can simply not call it, so
+  it can never be the basis of an invoice. `usage_events` is the billable one.
+- **Open calls are charged forward** by a 60s sweep in `UsageService`, not just
+  on `participant_left`; otherwise a spent tenant keeps an open room for hours.
+  The sweep is guarded by an in-process flag, which is only sufficient because
+  the stack runs **one** `api` container — a second one would double-charge
+  until this grows an advisory lock.
+- Units are **billable seconds** stored as `int`, not `numeric`/`bigint`: pg
+  hands both of those back as strings and the arithmetic silently becomes
+  string concatenation.
+- The three plan modes share one rule. `prepaid` is just `pay_as_you_go` with a
+  credit limit of zero, and `unlimited` skips the check but still records usage.
 
 ## Layout
 
@@ -242,11 +312,8 @@ Target: **roomkit.ir** on a VPS at `45.159.149.10`. The stack is
   `ufw allow from 172.16.0.0/12 to any port 7880 proto tcp`.
 - **Server-side state** lives in `/opt/roomkit/.env`, which the deploy rsync
   explicitly excludes. Template: `deploy/.env.production.example`.
-- **Migrations still do not exist.** `synchronize` is off when
-  `NODE_ENV=production`, so an empty database stays empty; `DB_SYNCHRONIZE=true`
-  is the documented one-time override for the very first boot. Generate real
-  migrations before the schema changes again, or a later change will silently
-  drop data.
+- **Migrations run at boot** (`migrationsRun` in `DatabaseModule`), so a deploy
+  applies them before the app serves. See the Migrations section above.
 
 The API image installs from the manifest webpack generates
 (`generatePackageJson`), not the root `package.json`. Two consequences: a

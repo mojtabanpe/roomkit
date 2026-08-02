@@ -1,0 +1,263 @@
+<div class="page">
+  <header class="top">
+    <a class="brand" routerLink="/"><app-logo [size]="30" /></a>
+    @if (hasToken()) {
+      <button hlmBtn variant="ghost" size="sm" (click)="signOut()">
+        خروج از پنل
+      </button>
+    }
+  </header>
+
+  @if (error(); as err) {
+    <div hlmAlert variant="destructive" role="alert" class="wide">
+      <p hlmAlertDescription>{{ err }}</p>
+    </div>
+  }
+
+  @if (!hasToken()) {
+    <form class="card gate" (submit)="$event.preventDefault(); signIn()">
+      <h1>پنل مدیریت پلتفرم‌ها</h1>
+      <p class="sub">
+        توکن مدیریت را وارد کنید. این توکن همان
+        <code class="latin">ADMIN_TOKEN</code> سرور است و تا بسته‌شدن این تب
+        نگه داشته می‌شود.
+      </p>
+      <label class="field">
+        <span hlmLabel>توکن مدیریت</span>
+        <input
+          hlmInput
+          type="password"
+          dir="ltr"
+          autocomplete="off"
+          [ngModel]="tokenInput()"
+          (ngModelChange)="tokenInput.set($event)"
+          name="adminToken"
+          required
+        />
+      </label>
+      <button hlmBtn size="lg" type="submit">ورود</button>
+    </form>
+  } @else {
+    <section class="card">
+      <h2>افزودن پلتفرم</h2>
+      <div class="new-grid">
+        <label class="field">
+          <span hlmLabel>کلید</span>
+          <input
+            hlmInput
+            dir="ltr"
+            placeholder="acme"
+            [ngModel]="form().key"
+            (ngModelChange)="form.set({ ...form(), key: $event })"
+            name="tenantKey"
+          />
+          <small>در نام اتاق‌های لای‌وکیت می‌آید. کوتاه و لاتین.</small>
+        </label>
+
+        <label class="field">
+          <span hlmLabel>نام</span>
+          <input
+            hlmInput
+            placeholder="شرکت نمونه"
+            [ngModel]="form().name"
+            (ngModelChange)="form.set({ ...form(), name: $event })"
+            name="tenantName"
+          />
+        </label>
+
+        <label class="field">
+          <span hlmLabel>نوع اشتراک</span>
+          <select
+            class="select"
+            [ngModel]="form().planMode"
+            (ngModelChange)="form.set({ ...form(), planMode: $event })"
+            name="tenantPlan"
+          >
+            @for (mode of planModes; track mode) {
+              <option [value]="mode">{{ planLabels[mode] }}</option>
+            }
+          </select>
+        </label>
+
+        <button hlmBtn [disabled]="creating()" (click)="createTenant()">
+          {{ creating() ? 'صبر کنید…' : 'ساختن' }}
+        </button>
+      </div>
+    </section>
+
+    <section class="list">
+      <div class="list-head">
+        <h2>پلتفرم‌ها</h2>
+        <button hlmBtn variant="ghost" size="sm" (click)="refresh()">
+          {{ loading() ? 'در حال بارگذاری…' : 'تازه‌سازی' }}
+        </button>
+      </div>
+
+      @if (tenants().length === 0 && !loading()) {
+        <p class="empty">هنوز پلتفرمی ثبت نشده است.</p>
+      }
+
+      @for (tenant of tenants(); track tenant.id) {
+        <article class="card row" [class.open]="openId() === tenant.id">
+          <button class="row-head" type="button" (click)="toggle(tenant)">
+            <div class="ident">
+              <strong>{{ tenant.name }}</strong>
+              <code class="latin">{{ tenant.key }}</code>
+            </div>
+
+            <div class="badges">
+              <span hlmBadge variant="secondary">{{
+                planLabels[tenant.planMode]
+              }}</span>
+              @if (!tenant.active) {
+                <span hlmBadge variant="destructive">معلق</span>
+              }
+            </div>
+
+            <div class="balance">
+              @if (tenant.remainingUnits === null) {
+                <span class="unlimited">بدون محدودیت</span>
+              } @else {
+                <span
+                  class="remaining"
+                  [class.spent]="tenant.remainingUnits <= 0"
+                >
+                  {{ minutes(tenant.remainingUnits) | faNumber }} دقیقه مانده
+                </span>
+              }
+              <small
+                >مصرف: {{ minutes(tenant.usedUnits) | faNumber }} دقیقه</small
+              >
+            </div>
+          </button>
+
+          @if (openId() === tenant.id) {
+            <div class="drawer">
+              <div class="controls">
+                <div class="control">
+                  <span hlmLabel>نوع اشتراک</span>
+                  <select
+                    class="select"
+                    [ngModel]="tenant.planMode"
+                    (ngModelChange)="setPlan(tenant, $event)"
+                    [name]="'plan-' + tenant.id"
+                  >
+                    @for (mode of planModes; track mode) {
+                      <option [value]="mode">{{ planLabels[mode] }}</option>
+                    }
+                  </select>
+                </div>
+
+                <div class="control">
+                  <span hlmLabel>افزودن اعتبار (دقیقه)</span>
+                  <div class="inline">
+                    <input
+                      hlmInput
+                      type="number"
+                      dir="ltr"
+                      min="1"
+                      [ngModel]="topUpMinutes()"
+                      (ngModelChange)="topUpMinutes.set($event)"
+                      [name]="'topup-' + tenant.id"
+                    />
+                    <button hlmBtn size="sm" (click)="topUp(tenant)">
+                      افزودن
+                    </button>
+                  </div>
+                </div>
+
+                <div class="control">
+                  <span hlmLabel>سقف بدهکاری (دقیقه)</span>
+                  <div class="inline">
+                    <input
+                      hlmInput
+                      type="number"
+                      dir="ltr"
+                      min="0"
+                      [placeholder]="
+                        '' + (minutes(tenant.creditLimitUnits) ?? 0)
+                      "
+                      [ngModel]="creditMinutes()"
+                      (ngModelChange)="creditMinutes.set($event)"
+                      [name]="'credit-' + tenant.id"
+                    />
+                    <button hlmBtn size="sm" (click)="setCredit(tenant)">
+                      ذخیره
+                    </button>
+                  </div>
+                  <small>فقط برای اشتراک مصرفی معنی دارد.</small>
+                </div>
+
+                <div class="control">
+                  <span hlmLabel>وضعیت</span>
+                  <button
+                    hlmBtn
+                    size="sm"
+                    [variant]="tenant.active ? 'outline' : 'default'"
+                    (click)="setActive(tenant, !tenant.active)"
+                  >
+                    {{ tenant.active ? 'تعلیق پلتفرم' : 'فعال‌سازی' }}
+                  </button>
+                  <small>تعلیق، کلیدهایش را فوراً بی‌اثر می‌کند.</small>
+                </div>
+              </div>
+
+              <div class="keys">
+                <div class="keys-head">
+                  <span hlmLabel>کلیدهای API</span>
+                  <button hlmBtn size="sm" variant="outline" (click)="issueKey(tenant)">
+                    کلید تازه
+                  </button>
+                </div>
+
+                @if (newKey(); as issued) {
+                  <div hlmAlert class="fresh" role="status">
+                    <p hlmAlertDescription>
+                      این کلید فقط همین یک‌بار نمایش داده می‌شود — سرور فقط
+                      هش آن را نگه می‌دارد.
+                    </p>
+                    <div class="secret">
+                      <code class="latin">{{ issued.key }}</code>
+                      <button hlmBtn size="sm" (click)="copy(issued.key)">
+                        رونوشت
+                      </button>
+                    </div>
+                  </div>
+                }
+
+                @if (detail(); as d) {
+                  @for (key of d.keys; track key.id) {
+                    <div class="key" [class.revoked]="key.revokedAt">
+                      <code class="latin">{{ key.prefix }}</code>
+                      <span class="key-meta">
+                        @if (key.revokedAt) {
+                          باطل‌شده
+                        } @else if (key.lastUsedAt) {
+                          آخرین استفاده: {{ key.lastUsedAt | date: 'yyyy/MM/dd' }}
+                        } @else {
+                          هنوز استفاده نشده
+                        }
+                      </span>
+                      @if (!key.revokedAt) {
+                        <button
+                          hlmBtn
+                          size="sm"
+                          variant="ghost"
+                          (click)="revokeKey(tenant, key.id)"
+                        >
+                          باطل کن
+                        </button>
+                      }
+                    </div>
+                  } @empty {
+                    <p class="empty">هنوز کلیدی صادر نشده است.</p>
+                  }
+                }
+              </div>
+            </div>
+          }
+        </article>
+      }
+    </section>
+  }
+</div>

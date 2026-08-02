@@ -79,6 +79,36 @@
         }
       }
     },
+    "migration:generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "typeorm-ts-node-commonjs migration:generate apps/api/src/app/database/migrations/{args.name} -d apps/api/src/data-source.ts -p",
+        "cwd": "{workspaceRoot}",
+        "env": {
+          "TS_NODE_PROJECT": "apps/api/tsconfig.app.json"
+        }
+      }
+    },
+    "migration:run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "typeorm-ts-node-commonjs migration:run -d apps/api/src/data-source.ts",
+        "cwd": "{workspaceRoot}",
+        "env": {
+          "TS_NODE_PROJECT": "apps/api/tsconfig.app.json"
+        }
+      }
+    },
+    "migration:revert": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "typeorm-ts-node-commonjs migration:revert -d apps/api/src/data-source.ts",
+        "cwd": "{workspaceRoot}",
+        "env": {
+          "TS_NODE_PROJECT": "apps/api/tsconfig.app.json"
+        }
+      }
+    },
     "test": {
       "executor": "@nx/jest:jest",
       "outputs": [

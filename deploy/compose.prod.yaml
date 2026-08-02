@@ -36,12 +36,19 @@ services:
       NODE_ENV: production
       PORT: 3000
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      # First boot only — see the "Migrations" note in AGENTS.md.
+      # Escape hatch only. Migrations run at boot; see AGENTS.md → Migrations.
       DB_SYNCHRONIZE: ${DB_SYNCHRONIZE:-false}
+      ADMIN_TOKEN: ${ADMIN_TOKEN}
+      USAGE_SWEEP_SECONDS: ${USAGE_SWEEP_SECONDS:-60}
       CORS_ORIGIN: ${CORS_ORIGIN}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
-      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
+      # Fixed here rather than in .env, and deliberately: the key *name* also
+      # has to appear in deploy/livekit/livekit.yaml's webhook block, which
+      # cannot read environment variables. Pinning it in this one file means
+      # there is no pair of values left that can disagree. It is not a secret —
+      # it travels in the `iss` claim of every token we mint.
+      LIVEKIT_API_KEY: roomkit
       LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
       LIVEKIT_URL: ${LIVEKIT_URL}
     expose:
@@ -76,7 +83,9 @@ services:
     environment:
       # LiveKit reads its key map from this env var; keeps secrets out of the
       # mounted config file.
-      LIVEKIT_KEYS: '${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}'
+      # Same fixed name as the api service above; only the secret comes from
+      # .env. LiveKit rejects a secret shorter than 32 characters.
+      LIVEKIT_KEYS: 'roomkit: ${LIVEKIT_API_SECRET}'
     volumes:
       - ./livekit/livekit.yaml:/etc/livekit.yaml:ro
       # TURN/TLS reuses the certificate certbot issued for the domain.

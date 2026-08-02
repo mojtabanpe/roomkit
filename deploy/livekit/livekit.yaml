@@ -22,5 +22,23 @@ turn:
   cert_file: /etc/letsencrypt/live/roomkit.ir/fullchain.pem
   key_file: /etc/letsencrypt/live/roomkit.ir/privkey.pem
 
+# Usage metering. This is the only source of billable minutes — the browser is
+# never trusted for it.
+#
+# `api_key` is the *name* half of the pair, which is public (it travels in the
+# `iss` claim of every token we mint), so unlike the secret it may live here.
+# This file gets no environment-variable substitution — LiveKit reads it
+# literally — which is why the name is pinned to `roomkit` in compose.prod.yaml
+# for both services rather than coming from .env. A name absent from
+# LIVEKIT_KEYS is not a silent failure: LiveKit refuses to start and logs
+# "api_key is required to use webhooks".
+#
+# The URL goes back in through nginx on the host because this container runs
+# with network_mode: host and cannot resolve the `api` service by name.
+webhook:
+  api_key: roomkit
+  urls:
+    - 'https://roomkit.ir/api/livekit/webhook'
+
 logging:
   level: info

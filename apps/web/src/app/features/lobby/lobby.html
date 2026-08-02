@@ -39,6 +39,7 @@
           placeholder="signal-4821"
           [ngModel]="room()"
           (ngModelChange)="room.set($event)"
+          (blur)="checkRoom()"
           name="room"
         />
         <button hlmBtn variant="outline" size="icon" type="button" class="dice" (click)="suggestRoom()" title="پیشنهاد یک اتاق">
@@ -46,6 +47,28 @@
         </button>
       </div>
     </label>
+
+    @if (isPrivate()) {
+      <label class="field">
+        <span hlmLabel>رمز اتاق</span>
+        <input
+          hlmInput
+          type="password"
+          dir="ltr"
+          autocomplete="off"
+          inputmode="numeric"
+          [ngModel]="passcode()"
+          (ngModelChange)="passcode.set($event)"
+          name="passcode"
+          required
+        />
+        @if (passcodeRejected()) {
+          <small class="wrong">رمز درست نبود. دوباره امتحان کنید.</small>
+        } @else {
+          <small>«{{ lookup()?.name }}» اتاق خصوصی است و بدون رمز باز نمی‌شود.</small>
+        }
+      </label>
+    }
 
     @if (savedRooms().length > 0) {
       <div class="saved">

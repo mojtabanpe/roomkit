@@ -1,12 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { MeetingSession } from './entities/meeting-session.entity';
-import { Message } from './entities/message.entity';
-import { Room } from './entities/room.entity';
-import { User } from './entities/user.entity';
+import { ENTITIES } from './entities';
+import { MIGRATIONS } from './migrations';
 
-export const ENTITIES = [User, Room, Message, MeetingSession];
+export { ENTITIES };
 
 @Module({
   imports: [
@@ -17,13 +15,20 @@ export const ENTITIES = [User, Room, Message, MeetingSession];
         type: 'postgres' as const,
         url: config.get<string>('DATABASE_URL'),
         entities: ENTITIES,
-        // Auto-schema outside production. Production defaults to off — but the
-        // first deploy has no migrations to run against an empty database, so
-        // DB_SYNCHRONIZE=true is the documented one-time escape hatch until
-        // generated migrations exist (see AGENTS.md → Deployment).
-        synchronize:
-          config.get<string>('NODE_ENV') !== 'production' ||
-          config.get<string>('DB_SYNCHRONIZE') === 'true',
+        migrations: MIGRATIONS,
+        /**
+         * Migrations own the schema now, in every environment. Leaving
+         * `synchronize` on in development was what made `migration:generate`
+         * useless there: TypeORM had already applied the entity changes, so
+         * the generated migration came out empty and the two environments
+         * drifted apart silently.
+         *
+         * `DB_SYNCHRONIZE=true` remains as a local escape hatch only. It and
+         * migrations must not both be on — synchronize would create the tables
+         * the initial migration then tries to create again.
+         */
+        synchronize: config.get<string>('DB_SYNCHRONIZE') === 'true',
+        migrationsRun: config.get<string>('DB_SYNCHRONIZE') !== 'true',
         logging: false,
       }),
     }),

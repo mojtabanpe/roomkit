@@ -6,7 +6,10 @@ import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
 import { LivekitModule } from './livekit/livekit.module';
 import { MeetingsModule } from './meetings/meetings.module';
+import { PlatformModule } from './platform/platform.module';
 import { RoomsModule } from './rooms/rooms.module';
+import { TenantsModule } from './tenants/tenants.module';
+import { UsageModule } from './usage/usage.module';
 
 @Module({
   imports: [
@@ -20,6 +23,9 @@ import { RoomsModule } from './rooms/rooms.module';
     LivekitModule,
     MeetingsModule,
     RoomsModule,
+    TenantsModule,
+    UsageModule,
+    PlatformModule,
   ],
   controllers: [AppController],
   providers: [AppService],

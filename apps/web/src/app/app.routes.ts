@@ -23,6 +23,11 @@ export const appRoutes: Route[] = [
       import('./features/auth/auth-page').then((m) => m.AuthPage),
   },
   {
+    path: 'admin',
+    loadComponent: () =>
+      import('./features/admin/admin-page').then((m) => m.AdminPage),
+  },
+  {
     path: 'room/:room',
     loadComponent: () => import('./features/room/room').then((m) => m.Room),
   },

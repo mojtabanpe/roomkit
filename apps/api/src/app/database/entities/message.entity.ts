@@ -14,7 +14,8 @@ export class Message {
   @PrimaryColumn({ type: 'uuid' })
   id!: string;
 
-  @Column({ type: 'varchar', length: 64 })
+  /** The LiveKit room name, which for a tenant's room carries its key prefix. */
+  @Column({ type: 'varchar', length: 128 })
   roomSlug!: string;
 
   /** LiveKit participant identity — unique within a room, guests included. */

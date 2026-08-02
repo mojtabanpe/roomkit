@@ -117,6 +117,15 @@ h1 .hl {
   font-weight: 600;
   color: var(--on-surface-variant);
 }
+.field small {
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--outline);
+}
+.field small.wrong {
+  color: var(--error);
+  font-weight: 600;
+}
 
 .room-row {
   display: flex;
