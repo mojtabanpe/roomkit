@@ -8,8 +8,13 @@ import {
   RoomEvent,
   Track,
 } from 'livekit-client';
+import type { RoomOptions } from 'livekit-client';
 import { MeetingsService } from './meetings.service';
-import { TokenService } from './token.service';
+import {
+  JoinTokenResponse,
+  RoomConnectionLimits,
+  TokenService,
+} from './token.service';
 
 export interface Tile {
   participant: Participant;
@@ -80,24 +85,23 @@ export class RoomService {
     room: string,
     identity: string,
     name: string | undefined,
-    opts: { mic: boolean; cam: boolean; passcode?: string },
+    opts: {
+      mic: boolean;
+      cam: boolean;
+      passcode?: string;
+      tokenResponse?: JoinTokenResponse;
+    },
   ): Promise<void> {
     this.error.set(null);
     this.deviceNotice.set(null);
     this.messages.set([]);
     this.unreadCount.set(0);
-    const { token, serverUrl } = await this.tokens.fetchToken(
-      room,
-      identity,
-      name,
-      opts.passcode,
-    );
+    const { token, serverUrl, limits } =
+      opts.tokenResponse ??
+      (await this.tokens.fetchToken(room, identity, name, opts.passcode));
     this.roomToken = token;
 
-    const lkRoom = new Room({
-      adaptiveStream: true,
-      dynacast: true,
-    });
+    const lkRoom = new Room(roomOptionsFor(limits));
     this.room = lkRoom;
     this.roomName.set(room);
     this.localIdentity.set(identity);
@@ -199,7 +203,9 @@ export class RoomService {
   private async openSession(): Promise<void> {
     if (!this.roomToken) return;
     try {
-      const { id, startedAt } = await this.meetings.startSession(this.roomToken);
+      const { id, startedAt } = await this.meetings.startSession(
+        this.roomToken,
+      );
       this.sessionId = id;
 
       // The API knows about people who were here and already left; LiveKit
@@ -360,6 +366,31 @@ export class RoomService {
   private bump(): void {
     this.revision.update((v) => v + 1);
   }
+}
+
+export function roomOptionsFor(limits?: RoomConnectionLimits): RoomOptions {
+  const video = limits?.video;
+  return {
+    adaptiveStream: true,
+    dynacast: true,
+    ...(video
+      ? {
+          videoCaptureDefaults: {
+            resolution: {
+              width: video.width,
+              height: video.height,
+              frameRate: video.frameRate,
+            },
+          },
+          publishDefaults: {
+            videoEncoding: {
+              maxBitrate: video.maxBitrate,
+              maxFramerate: video.frameRate,
+            },
+          },
+        }
+      : {}),
+  };
 }
 
 export { Track };

@@ -34,6 +34,7 @@ import { JoinTokenResponse, LivekitService } from '../livekit/livekit.service';
 import { ROOM_SLUG_MESSAGE, ROOM_SLUG_PATTERN } from '../rooms/slug';
 import { ApiKeyGuard, CurrentTenant } from '../tenants/api-key.guard';
 import { livekitRoomName } from '../tenants/room-name';
+import { TenantRoomPolicyService } from '../tenants/tenant-room-policy.service';
 import { BalanceView, UsageService } from '../usage/usage.service';
 
 /** Same cost as user passwords — a 4-6 digit PIN is worth slowing down. */
@@ -95,6 +96,15 @@ interface RoomView {
   createdAt: Date;
 }
 
+interface TenantAccountView {
+  name: string;
+  key: string;
+  planMode: Tenant['planMode'];
+  maxParticipants: number | null;
+  active: boolean;
+  createdAt: Date;
+}
+
 /**
  * The API a partner platform calls from its **backend**, with `X-Api-Key`.
  * Their own UI talks straight to LiveKit with the token this hands back; we
@@ -107,11 +117,24 @@ export class PlatformController {
     @InjectRepository(Room) private readonly rooms: Repository<Room>,
     private readonly livekit: LivekitService,
     private readonly usage: UsageService,
+    private readonly policies: TenantRoomPolicyService,
   ) {}
 
   @Get('usage')
   usageSummary(@CurrentTenant() tenant: Tenant): Promise<BalanceView> {
     return this.usage.balanceOf(tenant);
+  }
+
+  @Get('account')
+  account(@CurrentTenant() tenant: Tenant): TenantAccountView {
+    return {
+      name: tenant.name,
+      key: tenant.key,
+      planMode: tenant.planMode,
+      maxParticipants: this.policies.limits(tenant).maxParticipants,
+      active: tenant.active,
+      createdAt: tenant.createdAt,
+    };
   }
 
   @Get('rooms')
@@ -146,7 +169,8 @@ export class PlatformController {
         passcodeHash: dto.passcode
           ? await bcrypt.hash(dto.passcode, PASSCODE_ROUNDS)
           : null,
-        maxParticipants: dto.maxParticipants ?? tenant.maxParticipants,
+        maxParticipants: this.policies.limits(tenant, dto.maxParticipants)
+          .maxParticipants,
       }),
     );
     return this.view(tenant, room);
@@ -183,22 +207,36 @@ export class PlatformController {
   ): Promise<JoinTokenResponse> {
     const room = await this.mustFind(tenant, slug);
 
-    if (!(await this.usage.canAdmit(tenant))) {
+    const livekitRoom = livekitRoomName(tenant.key, room.slug);
+    const admission = await this.policies.admission(tenant, livekitRoom);
+    if ('reason' in admission) {
       throw new HttpException(
-        'اعتبار این حساب تمام شده است.',
-        HttpStatus.PAYMENT_REQUIRED,
+        admission.reason === 'duration_exceeded'
+          ? 'زمان ۳۰ دقیقه‌ای این جلسه به پایان رسیده است.'
+          : 'اعتبار این حساب تمام شده است.',
+        admission.reason === 'duration_exceeded'
+          ? HttpStatus.GONE
+          : HttpStatus.PAYMENT_REQUIRED,
       );
     }
 
-    const livekitRoom = livekitRoomName(tenant.key, room.slug);
+    const limits = this.policies.limits(tenant, room.maxParticipants);
+    if (
+      limits.maxParticipants !== null &&
+      (await this.livekit.activeParticipantCount(livekitRoom)) >=
+        limits.maxParticipants
+    ) {
+      throw new HttpException('ظرفیت این اتاق تکمیل است.', HttpStatus.CONFLICT);
+    }
     // Create it first so the participant cap is the server's, not the client's.
-    await this.livekit.ensureRoom(livekitRoom, room.maxParticipants);
+    await this.livekit.ensureRoom(livekitRoom, limits.maxParticipants);
 
     return this.livekit.createJoinToken({
       room: livekitRoom,
       identity: dto.identity,
       name: dto.name,
       canPublish: dto.canPublish,
+      limits,
     });
   }
 
@@ -216,7 +254,8 @@ export class PlatformController {
       name: room.name,
       visibility: room.visibility,
       hasPasscode: room.passcodeHash !== null,
-      maxParticipants: room.maxParticipants,
+      maxParticipants: this.policies.limits(tenant, room.maxParticipants)
+        .maxParticipants,
       livekitRoom: livekitRoomName(tenant.key, room.slug),
       createdAt: room.createdAt,
     };

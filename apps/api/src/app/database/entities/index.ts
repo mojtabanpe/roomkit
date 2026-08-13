@@ -4,6 +4,8 @@ import { Message } from './message.entity';
 import { Room } from './room.entity';
 import { TenantBalance } from './tenant-balance.entity';
 import { Tenant } from './tenant.entity';
+import { TenantMember } from './tenant-member.entity';
+import { TenantRoomMember } from './tenant-room-member.entity';
 import { UsageEvent } from './usage-event.entity';
 import { User } from './user.entity';
 
@@ -17,6 +19,8 @@ export const ENTITIES = [
   Message,
   MeetingSession,
   Tenant,
+  TenantMember,
+  TenantRoomMember,
   ApiKey,
   TenantBalance,
   UsageEvent,

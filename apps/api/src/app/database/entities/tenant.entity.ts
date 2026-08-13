@@ -38,6 +38,14 @@ export class Tenant {
   @Column({ type: 'varchar', length: 120 })
   name!: string;
 
+  /** Tenant credentials are independent from normal roomkit users. */
+  @Index('ux_tenants_email', { unique: true, where: '"email" IS NOT NULL' })
+  @Column({ type: 'varchar', length: 254, nullable: true })
+  email!: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true, select: false })
+  passwordHash!: string | null;
+
   @Column({ type: 'varchar', length: 16, default: 'prepaid' })
   planMode!: PlanMode;
 

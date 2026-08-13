@@ -1,0 +1,144 @@
+<main class="page">
+  <header>
+    <a routerLink="/" aria-label="صفحه اصلی روم‌کیت">
+      <app-logo [size]="32" />
+    </a>
+    <a hlmBtn variant="ghost" routerLink="/pricing">بازگشت به پلن‌ها</a>
+  </header>
+
+  @if (result(); as created) {
+  <section hlmCard class="success-card" aria-live="polite">
+    <span class="success-mark" aria-hidden="true">✓</span>
+    <p class="eyebrow">فروشگاه آماده است</p>
+    <h1>{{ created.tenant.name }}</h1>
+    <p>
+      طرح {{ selectedPlan().label }} برای شناسه
+      <code class="latin">{{ created.tenant.key }}</code>
+      ثبت شد.
+    </p>
+    <div class="next-step">
+      <strong>مرحله بعد</strong>
+      <span>در پنل tenant با ایمیل و رمز سازمانی همین فرم وارد شوید.</span>
+    </div>
+    <a hlmBtn size="lg" [href]="portalUrl()">ورود به پنل فروشگاه</a>
+    <a hlmBtn variant="ghost" routerLink="/join">بازگشت به روم‌کیت</a>
+  </section>
+  } @else {
+  <section class="onboarding">
+    <aside class="summary">
+      <p class="eyebrow">راه‌اندازی فروشگاه</p>
+      <h1>حساب سازمانی روم‌کیت را بسازید</h1>
+      <p>
+        این حساب برای مدیریت اشتراک، اعتبار و API فروشگاه شماست و از حساب
+        مهمان‌های جلسه جدا می‌ماند.
+      </p>
+
+      <article hlmCard class="plan-summary">
+        <div>
+          <span>پلن انتخاب‌شده</span>
+          <strong>{{ selectedPlan().label }}</strong>
+        </div>
+        <b>{{ selectedPlan().price }}</b>
+        <small>{{ selectedPlan().note }}</small>
+        <a routerLink="/pricing">تغییر پلن</a>
+      </article>
+
+      <ol aria-label="مراحل فعال‌سازی">
+        <li class="active"><span>۱</span> ساخت حساب فروشگاه</li>
+        <li><span>۲</span> ورود به داشبورد tenant</li>
+        <li><span>۳</span> دریافت و مدیریت توکن API</li>
+      </ol>
+    </aside>
+
+    <form hlmCard (submit)="$event.preventDefault(); submit()">
+      <div class="form-head">
+        <p class="eyebrow">اطلاعات فروشگاه</p>
+        <h2>شروع همکاری</h2>
+        <p>هویت tenant مستقل ساخته می‌شود و هنوز هیچ کاربری عضو آن نیست.</p>
+      </div>
+
+      @if (error(); as message) {
+      <div hlmAlert variant="destructive" role="alert">
+        <p hlmAlertDescription>{{ message }}</p>
+      </div>
+      }
+
+      <label class="field">
+        <span hlmLabel>نام فروشگاه یا سازمان</span>
+        <input
+          hlmInput
+          type="text"
+          autocomplete="organization"
+          placeholder="مثلاً فروشگاه آرمان"
+          [ngModel]="tenantName()"
+          (ngModelChange)="tenantName.set($event)"
+          name="tenantName"
+          maxlength="120"
+          required
+        />
+      </label>
+
+      <label class="field">
+        <span hlmLabel>شناسه لاتین فروشگاه</span>
+        <input
+          hlmInput
+          class="latin"
+          type="text"
+          dir="ltr"
+          autocomplete="off"
+          placeholder="arman-shop"
+          [ngModel]="tenantKey()"
+          (ngModelChange)="normalizeKey($event)"
+          name="tenantKey"
+          minlength="2"
+          maxlength="12"
+          pattern="[a-z0-9-]+"
+          required
+        />
+        <small>در آدرس اتاق‌ها استفاده می‌شود و بعداً قابل تغییر نیست.</small>
+      </label>
+
+      <label class="field">
+        <span hlmLabel>ایمیل ورود tenant</span>
+        <input
+          hlmInput
+          type="email"
+          dir="ltr"
+          autocomplete="email"
+          placeholder="tenant@company.ir"
+          [ngModel]="email()"
+          (ngModelChange)="email.set($event)"
+          name="email"
+          required
+        />
+      </label>
+
+      <label class="field">
+        <span hlmLabel>رمز عبور tenant</span>
+        <input
+          hlmInput
+          type="password"
+          dir="ltr"
+          autocomplete="new-password"
+          [ngModel]="password()"
+          (ngModelChange)="password.set($event)"
+          name="password"
+          minlength="8"
+          required
+        />
+        <small>حداقل ۸ نویسه.</small>
+      </label>
+
+      <button hlmBtn size="lg" type="submit" [disabled]="!canSubmit()">
+        @if (busy()) {
+        <hlm-spinner />
+        در حال ساخت فروشگاه } @else { ساخت فروشگاه و ادامه }
+      </button>
+
+      <p class="login-note">
+        حساب کاربری عادی و حساب tenant کاملاً مستقل هستند.
+      </p>
+    </form>
+  </section>
+  }
+</main>

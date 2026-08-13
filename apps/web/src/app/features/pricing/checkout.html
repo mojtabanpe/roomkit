@@ -1,0 +1,25 @@
+<main class="page checkout">
+  <a hlmBtn variant="ghost" routerLink="/pricing">بازگشت به پلن‌ها</a>
+  <section hlmCard>
+    <p>تکمیل سفارش فروشگاه</p>
+    <h1>پلن {{ plan()[1] }}</h1>
+    <strong>{{ plan()[2] }}</strong>
+    <hr />
+    <p>
+      درگاه پرداخت در مرحلهٔ بعد به این سفارش متصل می‌شود. فعلاً حساب سازمانی
+      و فضای tenant شما ساخته می‌شود.
+    </p>
+    <div class="actions">
+      <a
+        hlmBtn
+        routerLink="/tenant/register"
+        [queryParams]="{ plan: plan()[0] }"
+      >
+        ثبت‌نام فروشگاه و ادامه
+      </a>
+      <a hlmBtn variant="outline" [href]="tenantPortalUrl">
+        قبلاً فروشگاه ساخته‌اید؟
+      </a>
+    </div>
+  </section>
+</main>

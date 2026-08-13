@@ -9,13 +9,16 @@ import {
   signal,
 } from '@angular/core';
 import { Router } from '@angular/router';
+import { JoinTokenResponse } from '../../core/token.service';
 import { ConnectionState, Track } from 'livekit-client';
-import { HlmAlertImports } from '@org/ui-components/alert';
-import { HlmAvatarImports } from '@org/ui-components/avatar';
-import { HlmBadge } from '@org/ui-components/badge';
-import { HlmButton } from '@org/ui-components/button';
-import { HlmSeparator } from '@org/ui-components/separator';
-import { HlmSpinner } from '@org/ui-components/spinner';
+import {
+  HlmAlertImports,
+  HlmAvatarImports,
+  HlmBadge,
+  HlmButton,
+  HlmSeparator,
+  HlmSpinner,
+} from '@org/ui';
 import { RoomService, Tile } from '../../core/room.service';
 import { FaNumber } from '../../shared/fa-number.pipe';
 import { Icon } from '../../shared/icon';
@@ -30,6 +33,7 @@ interface JoinState {
   cam: boolean;
   /** Set by the lobby for private rooms. Never carried in the URL. */
   passcode?: string;
+  tokenResponse?: JoinTokenResponse;
 }
 
 type SideTab = 'people' | 'chat';
@@ -55,6 +59,7 @@ type SideTab = 'people' | 'chat';
 export class Room implements OnInit, OnDestroy {
   /** Bound from the `:room` route param. */
   readonly room = input.required<string>();
+  readonly tenantKey = input<string>();
 
   private readonly router = inject(Router);
   protected readonly rs = inject(RoomService);
@@ -100,7 +105,11 @@ export class Room implements OnInit, OnDestroy {
     const total = Math.max(0, Math.floor((this.now() - start) / 1000));
     const parts =
       total >= 3600
-        ? [Math.floor(total / 3600), Math.floor((total % 3600) / 60), total % 60]
+        ? [
+            Math.floor(total / 3600),
+            Math.floor((total % 3600) / 60),
+            total % 60,
+          ]
         : [Math.floor(total / 60), total % 60];
     return parts
       .map((n) =>
@@ -125,22 +134,29 @@ export class Room implements OnInit, OnDestroy {
   async ngOnInit(): Promise<void> {
     this.timer = setInterval(() => this.now.set(Date.now()), 1000);
 
-    if (this.rs.connected && this.rs.roomName() === this.room()) {
+    const actualRoom = this.tenantKey()
+      ? `${this.tenantKey()}~${this.room()}`
+      : this.room();
+    if (this.rs.connected && this.rs.roomName() === actualRoom) {
       return; // already in this room (e.g. navigated within app)
     }
 
     const state = history.state as Partial<JoinState>;
     if (!state?.identity) {
       // Direct link / refresh — send back to the join form with the room filled.
-      this.router.navigate(['/join'], { queryParams: { room: this.room() } });
+      this.router.navigate(
+        this.tenantKey() ? ['/t', this.tenantKey(), this.room()] : ['/join'],
+        this.tenantKey() ? {} : { queryParams: { room: this.room() } },
+      );
       return;
     }
 
     try {
-      await this.rs.join(this.room(), state.identity, state.name, {
+      await this.rs.join(actualRoom, state.identity, state.name, {
         mic: state.mic ?? true,
         cam: state.cam ?? true,
         passcode: state.passcode,
+        tokenResponse: state.tokenResponse,
       });
     } catch (err) {
       // A wrong passcode is a dead end on this screen — there is no field here
@@ -168,7 +184,9 @@ export class Room implements OnInit, OnDestroy {
 
   async leave(): Promise<void> {
     await this.rs.leave();
-    this.router.navigate(['/join']);
+    this.router.navigate(
+      this.tenantKey() ? ['/t', this.tenantKey(), this.room()] : ['/join'],
+    );
   }
 
   protected toggleSidebar(): void {

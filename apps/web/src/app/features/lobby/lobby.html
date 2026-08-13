@@ -42,8 +42,17 @@
           (blur)="checkRoom()"
           name="room"
         />
-        <button hlmBtn variant="outline" size="icon" type="button" class="dice" (click)="suggestRoom()" title="پیشنهاد یک اتاق">
-          ⤮
+        <button
+          hlmBtn
+          variant="outline"
+          size="icon"
+          type="button"
+          class="dice"
+          (click)="suggestRoom()"
+          title="پیشنهاد یک اتاق"
+          aria-label="پیشنهاد یک نام برای اتاق"
+        >
+          <app-icon name="shuffle" />
         </button>
       </div>
     </label>

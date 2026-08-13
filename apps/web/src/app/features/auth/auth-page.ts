@@ -2,10 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { HlmAlertImports } from '@org/ui-components/alert';
-import { HlmButton } from '@org/ui-components/button';
-import { HlmInput } from '@org/ui-components/input';
-import { HlmLabel } from '@org/ui-components/label';
+import { HlmAlertImports, HlmButton, HlmInput, HlmLabel } from '@org/ui';
 import { AuthService } from '../../core/auth.service';
 import { Logo } from '../../shared/logo';
 
@@ -33,7 +30,9 @@ export class AuthPage {
   private readonly router = inject(Router);
 
   protected readonly email = signal('');
+  protected readonly username = signal('');
   protected readonly displayName = signal('');
+  protected readonly tenantKey = signal('');
   protected readonly password = signal('');
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -44,7 +43,9 @@ export class AuthPage {
     if (this.busy()) return false;
     const base = this.email().trim().length > 0 && this.password().length > 0;
     return this.isRegister()
-      ? base && this.displayName().trim().length > 0
+      ? base &&
+          /^[a-z0-9][a-z0-9_-]{2,31}$/.test(this.username()) &&
+          this.displayName().trim().length > 0
       : base;
   });
 
@@ -57,13 +58,15 @@ export class AuthPage {
       if (this.isRegister()) {
         await this.auth.register(
           this.email().trim(),
+          this.username().trim().toLowerCase(),
           this.displayName().trim(),
           this.password(),
+          this.tenantKey().trim().toLowerCase() || undefined,
         );
       } else {
         await this.auth.login(this.email().trim(), this.password());
       }
-      this.router.navigate(['/join']);
+      this.router.navigate([this.isRegister() ? '/profile' : '/join']);
     } catch (err) {
       this.error.set(this.messageFor(err));
     } finally {

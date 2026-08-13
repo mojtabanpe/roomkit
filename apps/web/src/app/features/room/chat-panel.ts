@@ -9,8 +9,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { RoomService } from '../../core/room.service';
 import { FaNumber } from '../../shared/fa-number.pipe';
-import { HlmButton } from '@org/ui-components/button';
-import { HlmInput } from '@org/ui-components/input';
+import { HlmButton, HlmInput } from '@org/ui';
 import { Icon } from '../../shared/icon';
 
 @Component({

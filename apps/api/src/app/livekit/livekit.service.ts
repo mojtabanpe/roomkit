@@ -17,6 +17,19 @@ export interface JoinTokenRequest {
   name?: string;
   /** Viewer-only plans mint tokens that cannot publish. */
   canPublish?: boolean;
+  /** Product limits the client must apply when publishing media. */
+  limits?: RoomConnectionLimits;
+}
+
+export interface RoomConnectionLimits {
+  maxParticipants: number | null;
+  maxDurationSeconds: number | null;
+  video: {
+    width: number;
+    height: number;
+    frameRate: number;
+    maxBitrate: number;
+  } | null;
 }
 
 export interface JoinTokenResponse {
@@ -24,6 +37,7 @@ export interface JoinTokenResponse {
   serverUrl: string;
   room: string;
   identity: string;
+  limits?: RoomConnectionLimits;
 }
 
 @Injectable()
@@ -58,7 +72,13 @@ export class LivekitService {
 
     const token = await at.toJwt();
 
-    return { token, serverUrl, room: req.room, identity: req.identity };
+    return {
+      token,
+      serverUrl,
+      room: req.room,
+      identity: req.identity,
+      ...(req.limits ? { limits: req.limits } : {}),
+    };
   }
 
   /**
@@ -67,10 +87,29 @@ export class LivekitService {
    * no participant limit at all.
    */
   async ensureRoom(name: string, maxParticipants?: number | null) {
+    const [existing] = await this.roomAdmin().listRooms([name]);
+    if (existing) return existing;
     await this.roomAdmin().createRoom({
       name,
       ...(maxParticipants ? { maxParticipants } : {}),
     });
+  }
+
+  async activeParticipantCount(name: string): Promise<number> {
+    const [room] = await this.roomAdmin().listRooms([name]);
+    return room?.numParticipants ?? 0;
+  }
+
+  async mutePublishedTrack(
+    room: string,
+    identity: string,
+    trackSid: string,
+  ): Promise<void> {
+    await this.roomAdmin().mutePublishedTrack(room, identity, trackSid, true);
+  }
+
+  async removeParticipant(room: string, identity: string): Promise<void> {
+    await this.roomAdmin().removeParticipant(room, identity);
   }
 
   /** Ends a call for everyone in it — how a spent tenant gets cut off. */
@@ -87,7 +126,10 @@ export class LivekitService {
    * Verify a webhook delivery. `body` must be the raw request string — parsing
    * it to JSON first loses the exact bytes the signature covers.
    */
-  async receiveWebhook(body: string, authHeader?: string): Promise<WebhookEvent> {
+  async receiveWebhook(
+    body: string,
+    authHeader?: string,
+  ): Promise<WebhookEvent> {
     const { apiKey, apiSecret } = this.credentials();
     return new WebhookReceiver(apiKey, apiSecret).receive(body, authHeader);
   }

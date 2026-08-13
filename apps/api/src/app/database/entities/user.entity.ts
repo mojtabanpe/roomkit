@@ -14,9 +14,14 @@ export class User {
   id!: string;
 
   /** Stored lower-cased so lookups are case-insensitive. */
-  @Index({ unique: true })
+  @Index('ux_users_username', { unique: true })
   @Column({ type: 'varchar', length: 254 })
   email!: string;
+
+  /** Public handle used by tenants when importing or assigning members. */
+  @Index({ unique: true })
+  @Column({ type: 'varchar', length: 32 })
+  username!: string;
 
   @Column({ type: 'varchar', length: 64 })
   displayName!: string;

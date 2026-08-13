@@ -1,7 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { HlmButton } from '@org/ui-components/button';
-import { HlmCardImports } from '@org/ui-components/card';
+import { HlmButton, HlmCardImports } from '@org/ui';
 import { AuthService } from '../../core/auth.service';
 import { Logo } from '../../shared/logo';
 

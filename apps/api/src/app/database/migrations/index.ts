@@ -1,4 +1,6 @@
 import { InitialSchema1785658283780 } from './1785658283780-InitialSchema';
+import { AddTenantMembers1786000000000 } from './1786000000000-AddTenantMembers';
+import { AddIndependentTenantAccounts1786700000000 } from './1786700000000-AddIndependentTenantAccounts';
 
 /**
  * Migrations are listed explicitly rather than found with a glob.
@@ -10,4 +12,8 @@ import { InitialSchema1785658283780 } from './1785658283780-InitialSchema';
  *
  * Order matters: TypeORM runs them in array order, not by timestamp.
  */
-export const MIGRATIONS = [InitialSchema1785658283780];
+export const MIGRATIONS = [
+  InitialSchema1785658283780,
+  AddTenantMembers1786000000000,
+  AddIndependentTenantAccounts1786700000000,
+];

@@ -12,9 +12,10 @@ import { Tenant } from '../database/entities/tenant.entity';
 import { UsageEvent } from '../database/entities/usage-event.entity';
 import { LivekitService } from '../livekit/livekit.service';
 import { parseLivekitRoomName } from '../tenants/room-name';
+import { TenantRoomPolicyService } from '../tenants/tenant-room-policy.service';
 
 /** How often open stays are charged forward and over-limit tenants cut off. */
-const DEFAULT_SWEEP_SECONDS = 60;
+const DEFAULT_SWEEP_SECONDS = 15;
 
 export interface BalanceView {
   planMode: Tenant['planMode'];
@@ -47,6 +48,7 @@ export class UsageService implements OnModuleInit, OnModuleDestroy {
     private readonly dataSource: DataSource,
     private readonly livekit: LivekitService,
     private readonly config: ConfigService,
+    private readonly policies: TenantRoomPolicyService,
   ) {}
 
   onModuleInit(): void {
@@ -90,7 +92,9 @@ export class UsageService implements OnModuleInit, OnModuleDestroy {
       remainingUnits:
         tenant.planMode === 'unlimited'
           ? null
-          : balance.includedUnits + balance.creditLimitUnits - balance.usedUnits,
+          : balance.includedUnits +
+            balance.creditLimitUnits -
+            balance.usedUnits,
     };
   }
 
@@ -122,6 +126,34 @@ export class UsageService implements OnModuleInit, OnModuleDestroy {
       .execute();
   }
 
+  /**
+   * Persist the first participant's arrival as the room-session origin. This
+   * is deliberately a usage event (rather than an in-memory timer), so a
+   * process restart cannot reset the free plan's 30-minute allowance.
+   */
+  async openRoom(input: {
+    tenantId: string;
+    room: string;
+    sourceSid: string;
+    startedAt: Date;
+  }): Promise<void> {
+    await this.events
+      .createQueryBuilder()
+      .insert()
+      .values({
+        tenantId: input.tenantId,
+        room: input.room,
+        identity: 'room-session',
+        sourceSid: input.sourceSid,
+        kind: 'room',
+        startedAt: input.startedAt,
+        billedUntil: input.startedAt,
+        units: 0,
+      })
+      .orIgnore()
+      .execute();
+  }
+
   /** Charge the last slice and close one participant's stay. */
   async closeStay(sourceSid: string, endedAt: Date): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
@@ -130,7 +162,9 @@ export class UsageService implements OnModuleInit, OnModuleDestroy {
         lock: { mode: 'pessimistic_write' },
       });
       if (!event) return;
-      await this.chargeSlice(manager, event, endedAt);
+      if (event.kind === 'participant') {
+        await this.chargeSlice(manager, event, endedAt);
+      }
       await manager.update(UsageEvent, { id: event.id }, { endedAt });
     });
   }
@@ -167,12 +201,15 @@ export class UsageService implements OnModuleInit, OnModuleDestroy {
             lock: { mode: 'pessimistic_write' },
           });
           if (!fresh) return;
-          await this.chargeSlice(manager, fresh, now);
+          if (fresh.kind === 'participant') {
+            await this.chargeSlice(manager, fresh, now);
+          }
         });
         if (event.tenantId) touched.add(event.tenantId);
       }
 
       for (const tenantId of touched) {
+        await this.evictExpiredRooms(tenantId, now);
         await this.evictIfSpent(tenantId);
       }
     } finally {
@@ -234,6 +271,23 @@ export class UsageService implements OnModuleInit, OnModuleDestroy {
         this.log.warn(`closed ${room}: tenant ${tenantId} is out of balance`);
       } catch (err) {
         this.log.error(`could not close ${room}`, err);
+      }
+    }
+  }
+
+  private async evictExpiredRooms(tenantId: string, now: Date): Promise<void> {
+    const expired = await this.policies.expiredRoomsForTenant(tenantId, now);
+    if (!expired) return;
+
+    for (const room of expired.rooms) {
+      // A corrupted usage row must never let one tenant close another's room.
+      if (parseLivekitRoomName(room).tenantKey !== expired.tenant.key) continue;
+      try {
+        await this.livekit.closeRoom(room);
+        await this.closeRoom(room, now);
+        this.log.warn(`closed ${room}: free session reached 30 minutes`);
+      } catch (err) {
+        this.log.error(`could not close expired room ${room}`, err);
       }
     }
   }

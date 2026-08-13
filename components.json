@@ -1,5 +1,5 @@
 {
-  "componentsPath": "libs/ui-components",
+  "componentsPath": "libs/spartan",
   "generateAs": "entrypoint",
   "buildable": true,
   "style": "vega",

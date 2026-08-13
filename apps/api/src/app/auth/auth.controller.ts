@@ -1,6 +1,11 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import { AuthResult, AuthService, AuthUser } from './auth.service';
-import { LoginDto, RegisterDto } from './dto/auth.dto';
+import {
+  LoginDto,
+  RegisterDto,
+  RequestTenantMembershipDto,
+  UpdateProfileDto,
+} from './dto/auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { CurrentUser } from './optional-auth.decorator';
 
@@ -23,5 +28,29 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   me(@CurrentUser() user: AuthUser): AuthUser {
     return user;
+  }
+
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard)
+  updateProfile(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: UpdateProfileDto,
+  ): Promise<AuthUser> {
+    return this.auth.updateProfile(user.id, dto);
+  }
+
+  @Get('tenant-membership')
+  @UseGuards(JwtAuthGuard)
+  membership(@CurrentUser() user: AuthUser) {
+    return this.auth.membership(user.id);
+  }
+
+  @Post('tenant-membership')
+  @UseGuards(JwtAuthGuard)
+  requestMembership(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: RequestTenantMembershipDto,
+  ) {
+    return this.auth.requestTenantMembership(user.id, dto);
   }
 }

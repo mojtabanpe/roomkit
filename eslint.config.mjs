@@ -37,6 +37,31 @@ export default [
               onlyDependOnLibsWithTags: ['scope:web', 'scope:shared'],
             },
             {
+              sourceTag: 'scope:dashboard',
+              onlyDependOnLibsWithTags: ['scope:dashboard', 'scope:shared'],
+            },
+            {
+              sourceTag: 'scope:tenant',
+              onlyDependOnLibsWithTags: ['scope:tenant', 'scope:shared'],
+            },
+            {
+              sourceTag: 'type:app',
+              onlyDependOnLibsWithTags: [
+                'type:ui',
+                'type:feature',
+                'type:data-access',
+                'type:shared',
+              ],
+            },
+            {
+              sourceTag: 'type:ui',
+              onlyDependOnLibsWithTags: ['type:ui', 'type:spartan', 'type:shared'],
+            },
+            {
+              sourceTag: 'type:spartan',
+              onlyDependOnLibsWithTags: ['type:spartan', 'type:shared'],
+            },
+            {
               sourceTag: 'type:data',
               onlyDependOnLibsWithTags: ['type:data'],
             },

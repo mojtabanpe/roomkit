@@ -10,7 +10,8 @@ export type IconName =
   | 'hangup'
   | 'users'
   | 'send'
-  | 'shield';
+  | 'shield'
+  | 'shuffle';
 
 /** 24×24 stroke paths, drawn on a shared grid so weights stay consistent. */
 const PATHS: Record<IconName, string> = {
@@ -30,6 +31,8 @@ const PATHS: Record<IconName, string> = {
     'M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20M10 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM20 20v-1.5a3.5 3.5 0 0 0-2.6-3.4M15.5 4.7a3.5 3.5 0 0 1 0 6.6',
   send: 'M20 4L3 11l7 2.5L12.5 21z',
   shield: 'M12 3l7 3v6c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6zM9.5 12.2l1.8 1.8 3.4-3.6',
+  shuffle:
+    'M16 3h5v5M4 6h2.5c3.8 0 5.7 12 9.5 12H21M16 21h5v-5M4 18h2.5c1.4 0 2.6-1.6 3.8-3.8M13.7 8.9C14.5 7.2 15.2 6 16 6h5',
 };
 
 @Component({

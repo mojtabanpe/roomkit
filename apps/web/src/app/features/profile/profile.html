@@ -1,0 +1,80 @@
+<main class="page">
+  <header>
+    <a routerLink="/"><app-logo [size]="32" /></a
+    ><a hlmBtn variant="ghost" routerLink="/join">بازگشت</a>
+  </header>
+  <section class="grid">
+    <form hlmCard (submit)="$event.preventDefault(); save()">
+      <p class="eyebrow">حساب کاربری</p>
+      <h1>ویرایش پروفایل</h1>
+      @if (error(); as text) {
+      <div hlmAlert variant="destructive">
+        <p hlmAlertDescription>{{ text }}</p>
+      </div>
+      } @if (message(); as text) {
+      <div hlmAlert><p hlmAlertDescription>{{ text }}</p></div>
+      }
+      <label
+        ><span hlmLabel>نام نمایشی</span
+        ><input
+          hlmInput
+          [ngModel]="displayName()"
+          (ngModelChange)="displayName.set($event)"
+          name="displayName"
+      /></label>
+      <label
+        ><span hlmLabel>نام کاربری</span
+        ><input
+          hlmInput
+          dir="ltr"
+          [ngModel]="username()"
+          (ngModelChange)="username.set($event.toLowerCase())"
+          name="username"
+      /></label>
+      <label
+        ><span hlmLabel>ایمیل</span
+        ><input hlmInput dir="ltr" [value]="auth.user()?.email" disabled
+      /></label>
+      <button hlmBtn [disabled]="busy()">ذخیره تغییرات</button>
+    </form>
+    <section hlmCard class="membership">
+      <p class="eyebrow">عضویت سازمانی</p>
+      <h2>اتصال به tenant</h2>
+      @if (membership(); as member) {
+      <div class="status">
+        <div>
+          <strong>{{ member.tenant.name }}</strong
+          ><code>{{ member.tenant.key }}</code>
+        </div>
+        <span
+          hlmBadge
+          [variant]="member.status === 'active' ? 'secondary' : member.status === 'rejected' ? 'destructive' : 'outline'"
+          >{{ member.status === 'active' ? 'عضو فعال' : member.status ===
+          'pending' ? 'در انتظار تأیید' : 'رد شده' }}</span
+        >
+      </div>
+      } @if (!membership() || membership()?.status === 'rejected') {
+      <p>
+        شناسه tenant را وارد کنید؛ درخواست در پنل آن سازمان قابل تأیید یا رد
+        است.
+      </p>
+      <label
+        ><span hlmLabel>شناسه tenant</span
+        ><input
+          hlmInput
+          dir="ltr"
+          placeholder="acme"
+          [ngModel]="tenantKey()"
+          (ngModelChange)="tenantKey.set($event.toLowerCase())" /></label
+      ><button
+        hlmBtn
+        variant="outline"
+        (click)="requestMembership()"
+        [disabled]="busy()"
+      >
+        ارسال درخواست عضویت
+      </button>
+      }
+    </section>
+  </section>
+</main>

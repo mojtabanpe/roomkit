@@ -179,23 +179,23 @@ h1 {
   padding: 10px;
 }
 .t1 {
-  background: linear-gradient(150deg, #cfd6ff, #a9b4f5);
+  background: var(--feed-indigo);
 }
 .t2 {
-  background: linear-gradient(150deg, #bfe9f2, #8fd3e3);
+  background: var(--feed-teal);
 }
 .t3 {
-  background: linear-gradient(150deg, #e6d9f6, #c3b1ea);
+  background: var(--feed-violet);
 }
 .t4 {
-  background: linear-gradient(150deg, #f6dcdc, #e6b8bd);
+  background: var(--feed-rose);
 }
 .t .chip {
   font-size: 11px;
   font-weight: 600;
   padding: 4px 10px;
   border-radius: var(--rk-radius-pill);
-  background: rgba(255, 255, 255, 0.82);
+  background: var(--video-chip-bg);
   color: var(--on-surface);
 }
 
@@ -282,12 +282,15 @@ h2 {
 .card {
   padding: 28px;
   border-radius: var(--rk-radius);
-  border-color: var(--glass-border-strong);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-color: transparent;
+  box-shadow: var(--shadow-border);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 .card:hover {
   transform: translateY(-3px);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-border-hover);
 }
 
 .icon {
@@ -329,6 +332,16 @@ h2 {
   font-size: 14px;
   line-height: 1.9;
   color: var(--on-surface-variant);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+
+  .card:hover {
+    transform: none;
+  }
 }
 
 /* ---------- closing CTA ---------- */

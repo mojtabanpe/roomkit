@@ -1,0 +1,240 @@
+<main class="dashboard-shell">
+  <a class="dashboard-skip-link" href="#dashboard-content">پرش به محتوا</a>
+
+  <header class="dashboard-header glass">
+    <div class="dashboard-brand">
+      <img
+        class="dashboard-brand__mark"
+        src="logo-mark.png"
+        alt=""
+        width="44"
+        height="44"
+      />
+      <div class="dashboard-brand__copy">
+        <span class="dashboard-brand__meta">روم‌کیت</span>
+        <strong class="dashboard-brand__title">مدیریت سیستم</strong>
+      </div>
+    </div>
+
+    <nav class="dashboard-header__actions" aria-label="دسترسی‌های اصلی">
+      <a hlmBtn variant="ghost" [href]="appUrl">بازگشت به روم‌کیت</a>
+      @if (token()) {
+      <button hlmBtn variant="outline" type="button" (click)="signOut()">
+        خروج
+      </button>
+      }
+    </nav>
+  </header>
+
+  @if (!token()) {
+  <section
+    id="dashboard-content"
+    hlmCard
+    class="dashboard-auth glass"
+    aria-labelledby="admin-login-title"
+  >
+    @if (error(); as message) {
+    <div hlmAlert variant="destructive" role="alert">
+      <p hlmAlertDescription>{{ message }}</p>
+    </div>
+    }
+    <div class="dashboard-auth__copy">
+      <p class="dashboard-eyebrow">دسترسی حفاظت‌شده</p>
+      <h1 id="admin-login-title">ورود مدیر سیستم</h1>
+      <p>توکن مدیریت فقط تا بسته‌شدن همین تب نگه‌داری می‌شود.</p>
+    </div>
+
+    <form (submit)="$event.preventDefault(); signIn()">
+      <label class="field">
+        <span hlmLabel>توکن مدیریت</span>
+        <input
+          hlmInput
+          type="password"
+          dir="ltr"
+          autocomplete="off"
+          placeholder="ADMIN_TOKEN"
+          [ngModel]="tokenInput()"
+          (ngModelChange)="tokenInput.set($event)"
+          name="token"
+          required
+        />
+      </label>
+      <button hlmBtn size="lg" type="submit">ورود به داشبورد</button>
+    </form>
+  </section>
+  } @else {
+  <div class="dashboard-layout">
+    <aside class="dashboard-sidebar glass" aria-label="ناوبری مدیریت">
+      <div class="dashboard-sidebar__identity">
+        <span class="dashboard-sidebar__eyebrow">پنل داخلی</span>
+        <strong class="dashboard-sidebar__title">مرکز مدیریت</strong>
+        <p>نظارت بر اشتراک‌ها و وضعیت سرویس</p>
+      </div>
+
+      <nav class="dashboard-nav" aria-label="بخش‌های مدیریت">
+        <button
+          class="dashboard-nav__item"
+          type="button"
+          [class.is-active]="section() === 'overview'"
+          [attr.aria-pressed]="section() === 'overview'"
+          (click)="selectSection('overview')"
+        >
+          <svg
+            class="dashboard-nav__icon"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z"
+            />
+          </svg>
+          <span>نمای کلی</span>
+        </button>
+        <button
+          class="dashboard-nav__item"
+          type="button"
+          [class.is-active]="section() === 'subscriptions'"
+          [attr.aria-pressed]="section() === 'subscriptions'"
+          (click)="selectSection('subscriptions')"
+        >
+          <svg
+            class="dashboard-nav__icon"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Zm8 4.5 8-4.5M12 12 4 7.5M12 12v9"
+            />
+          </svg>
+          <span>اشتراک‌ها</span>
+          <b class="dashboard-nav__badge">{{ subscriptions().length }}</b>
+        </button>
+      </nav>
+
+      <div class="dashboard-sidebar__footer">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span>{{ activeCount() }} اشتراک فعال</span>
+      </div>
+    </aside>
+
+    <section id="dashboard-content" class="dashboard-content" tabindex="-1">
+      @if (error(); as message) {
+      <div
+        class="dashboard-feedback"
+        hlmAlert
+        variant="destructive"
+        role="alert"
+      >
+        <p hlmAlertDescription>{{ message }}</p>
+      </div>
+      } @if (section() === 'overview') {
+      <header class="dashboard-page-head">
+        <div class="dashboard-page-head__copy">
+          <p class="dashboard-eyebrow">وضعیت سرویس</p>
+          <h1 class="dashboard-page-title">نمای کلی</h1>
+          <p class="dashboard-page-description">
+            تصویر سریع و متمرکز از وضعیت اشتراک‌های روم‌کیت
+          </p>
+        </div>
+      </header>
+
+      <section class="stats" aria-label="خلاصهٔ اشتراک‌ها">
+        <article hlmCard class="stat">
+          <span class="stat-label">اشتراک‌های فعال</span>
+          <strong class="tabular-number">{{ activeCount() }}</strong>
+          <small>آمادهٔ استفاده از سرویس</small>
+        </article>
+        <article hlmCard class="stat">
+          <span class="stat-label">همهٔ اشتراک‌ها</span>
+          <strong class="tabular-number">{{ subscriptions().length }}</strong>
+          <small>مجموع فعال و معلق</small>
+        </article>
+        <article hlmCard class="stat">
+          <span class="stat-label">اشتراک‌های معلق</span>
+          <strong class="tabular-number">{{ suspendedCount() }}</strong>
+          <small>نیازمند بررسی وضعیت</small>
+        </article>
+      </section>
+
+      <section hlmCard class="overview-panel">
+        <div>
+          <p class="dashboard-eyebrow">عملیات روزانه</p>
+          <h2>مدیریت اشتراک‌ها</h2>
+          <p>
+            برای بررسی طرح، مصرف و اعتبار هر مجموعه وارد بخش اشتراک‌ها شوید.
+          </p>
+        </div>
+        <button hlmBtn type="button" (click)="selectSection('subscriptions')">
+          مشاهدهٔ اشتراک‌ها
+        </button>
+      </section>
+      } @else {
+      <header class="dashboard-page-head">
+        <div class="dashboard-page-head__copy">
+          <p class="dashboard-eyebrow">مرکز اشتراک‌ها</p>
+          <h1 class="dashboard-page-title">اشتراک‌ها</h1>
+          <p class="dashboard-page-description">
+            طرح، مصرف و اعتبار باقی‌ماندهٔ هر مجموعه را بررسی کنید.
+          </p>
+        </div>
+        <button
+          hlmBtn
+          variant="outline"
+          type="button"
+          [disabled]="loading()"
+          (click)="load()"
+        >
+          @if (loading()) { <hlm-spinner /> در حال تازه‌سازی } @else { تازه‌سازی
+          }
+        </button>
+      </header>
+
+      <section class="subscription-grid" aria-live="polite">
+        @for (item of subscriptions(); track item.id) {
+        <article hlmCard class="subscription-card">
+          <div class="card-head">
+            <div>
+              <h2>{{ item.name }}</h2>
+              <code class="latin">{{ item.key }}</code>
+            </div>
+            <span
+              hlmBadge
+              [variant]="item.active ? 'secondary' : 'destructive'"
+            >
+              {{ item.active ? 'فعال' : 'معلق' }}
+            </span>
+          </div>
+
+          <dl>
+            <div>
+              <dt>طرح</dt>
+              <dd>{{ planLabels[item.planMode] }}</dd>
+            </div>
+            <div>
+              <dt>مصرف</dt>
+              <dd class="tabular-number">
+                {{ minutes(item.usedUnits) }} دقیقه
+              </dd>
+            </div>
+            <div>
+              <dt>مانده</dt>
+              <dd class="tabular-number">
+                {{ item.remainingUnits === null ? 'نامحدود' :
+                minutes(item.remainingUnits) + ' دقیقه' }}
+              </dd>
+            </div>
+          </dl>
+        </article>
+        } @empty { @if (!loading()) {
+        <div hlmCard class="empty-state">
+          <span class="empty-icon" aria-hidden="true"></span>
+          <h2>هنوز اشتراکی وجود ندارد</h2>
+          <p>پس از ساخت اولین اشتراک، اطلاعات آن اینجا ظاهر می‌شود.</p>
+        </div>
+        } }
+      </section>
+      }
+    </section>
+  </div>
+  }
+</main>

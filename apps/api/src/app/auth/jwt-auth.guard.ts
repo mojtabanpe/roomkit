@@ -44,7 +44,10 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
-      const payload = this.jwt.verify<{ sub: string }>(token);
+      const payload = this.jwt.verify<{ sub: string; kind?: string }>(token);
+      // Tokens issued before the account split have no kind; keep those valid,
+      // but never accept a tenant-panel session on normal user endpoints.
+      if (payload.kind && payload.kind !== 'user') throw new Error('wrong session kind');
       const user = await this.auth.findById(payload.sub);
       if (!user) throw new Error('unknown user');
       req.user = user;

@@ -7,10 +7,14 @@ in Persian (RTL) and is served at **roomkit.ir**. Projects:
   (`livekit-server-sdk`).
 - **`apps/web`** — Angular (standalone, zoneless, signals) frontend that runs
   the conference UI on top of `livekit-client`.
+- **`apps/dashboard`** — internal system dashboard, served at
+  `dashboard.roomkit.ir`.
+- **`apps/tenant`** — tenant portal for members and rooms, served at
+  `tenant.roomkit.ir`.
 
 ## Prerequisites
 
-- Node 20+ and npm
+- Node 24 and npm
 - Docker (for Postgres, via `compose.yaml`)
 - A LiveKit server. Either:
   - **LiveKit Cloud** — create a free project at https://cloud.livekit.io, or
@@ -35,29 +39,33 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 
 Set in `.env`:
 
-| Variable             | Description                                        |
-| -------------------- | -------------------------------------------------- |
-| `LIVEKIT_API_KEY`    | LiveKit API key                                    |
-| `LIVEKIT_API_SECRET` | LiveKit API secret                                 |
-| `LIVEKIT_URL`        | Server URL, e.g. `wss://your.livekit.cloud`        |
-| `CORS_ORIGIN`        | Allowed origin(s), default `http://localhost:4200`; in production `https://roomkit.ir` |
-| `PORT`               | API port, default `3000`                           |
-| `DATABASE_URL`       | Postgres connection string                         |
-| `JWT_SECRET`         | Signing secret for auth tokens — set per environment |
-| `JWT_EXPIRES_IN`     | Token lifetime, default `7d`                       |
+| Variable             | Description                                                                                   |
+| -------------------- | --------------------------------------------------------------------------------------------- |
+| `LIVEKIT_API_KEY`    | LiveKit API key                                                                               |
+| `LIVEKIT_API_SECRET` | LiveKit API secret                                                                            |
+| `LIVEKIT_URL`        | Server URL, e.g. `wss://your.livekit.cloud`                                                   |
+| `CORS_ORIGIN`        | Comma-separated allowed origins; production includes the public, dashboard and tenant domains |
+| `PORT`               | API port, default `5400`                                                                      |
+| `DATABASE_URL`       | Postgres connection string                                                                    |
+| `JWT_SECRET`         | Signing secret for auth tokens — set per environment                                          |
+| `JWT_EXPIRES_IN`     | Token lifetime, default `7d`                                                                  |
 
 ## Run
 
 ```bash
-# terminal 1 — backend (http://localhost:3000/api)
+# terminal 1 — backend (http://localhost:5400/api)
 npx nx serve api
 
-# terminal 2 — frontend (http://localhost:4200)
+# terminal 2 — frontend (http://localhost:5200)
 npx nx serve web
+
+# optional dashboards
+npx nx serve dashboard  # http://localhost:5300
+npx nx serve tenant     # http://localhost:5500
 ```
 
 The Angular dev server proxies `/api` to the backend
-(`apps/web/proxy.conf.json`). Open http://localhost:4200, enter a name and a
+(`apps/web/proxy.conf.json`). Open http://localhost:5200, enter a name and a
 room, and join. Open the same room in another tab/device to see multi-party
 video.
 
@@ -94,7 +102,23 @@ npx nx g @spartan-ng/cli:healthcheck     # audit / auto-fix the install
 ```
 
 Spartan's theme variables are mapped onto the Luminous Glass palette in
-`apps/web/src/styles.scss`, so components inherit the brand automatically.
+`libs/ui/src/styles/theme.scss`, so all three Angular applications inherit the
+same brand tokens.
+
+## Production
+
+The `web` Docker image is the single nginx edge. Its build contains the public
+app plus the dashboard and tenant bundles, and routes them by hostname:
+
+- `roomkit.ir` → public conference app
+- `dashboard.roomkit.ir` → system dashboard
+- `tenant.roomkit.ir` → tenant portal
+- `livekit.roomkit.ir` → LiveKit signalling
+
+CI runs `nx sync:check` followed by affected lint, test and build tasks. A green
+CI run on `master` triggers the deployment workflow, which builds the `api` and
+edge `web` images, pins both to the tested commit SHA and verifies the API plus
+all three frontends on the VPS.
 
 ## Useful commands
 

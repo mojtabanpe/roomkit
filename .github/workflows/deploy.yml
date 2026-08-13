@@ -28,6 +28,8 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     strategy:
+      # The web image is the edge and contains all three Angular bundles:
+      # web, dashboard and tenant. The api remains a separate runtime image.
       matrix:
         app: [api, web]
     steps:
@@ -137,6 +139,33 @@ jobs:
 
             docker compose -f compose.prod.yaml pull
             docker compose -f compose.prod.yaml up -d --remove-orphans
+
+            # Existing installations may have a certificate issued before the
+            # dashboard and tenant subdomains existed. Expand it automatically
+            # once both DNS records resolve; missing DNS is reported without
+            # taking the already-running public site down.
+            domains_ready=true
+            for domain in dashboard.roomkit.ir tenant.roomkit.ir; do
+              if ! getent ahostsv4 "$domain" >/dev/null 2>&1; then
+                echo "TLS expansion skipped: $domain has no DNS record yet"
+                domains_ready=false
+              fi
+            done
+
+            if [ "$domains_ready" = true ]; then
+              docker compose -f compose.prod.yaml run --rm \
+                --entrypoint certbot certbot certonly \
+                --webroot -w /var/www/certbot \
+                --cert-name roomkit.ir --expand --keep-until-expiring \
+                --non-interactive --agree-tos \
+                -d roomkit.ir \
+                -d www.roomkit.ir \
+                -d dashboard.roomkit.ir \
+                -d tenant.roomkit.ir \
+                -d livekit.roomkit.ir
+              docker compose -f compose.prod.yaml exec -T web nginx -s reload
+            fi
+
             docker image prune -f
           REMOTE
 
@@ -148,12 +177,22 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_deploy -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" \
             'for i in $(seq 1 20); do
-               # Trailing slash matters: /api gets a 301 to /api/ from the
-               # prefix location, and this check does not follow redirects.
-               code=$(curl -sk -o /dev/null -w "%{http_code}" -H "Host: roomkit.ir" https://localhost/api/ || true)
-               [ "$code" = "200" ] && echo "api is up" && exit 0
+               healthy=true
+               for target in \
+                 "roomkit.ir /api/ api" \
+                 "roomkit.ir / public-web" \
+                 "dashboard.roomkit.ir / dashboard" \
+                 "tenant.roomkit.ir / tenant"; do
+                 set -- $target
+                 code=$(curl -sk -o /dev/null -w "%{http_code}" -H "Host: $1" "https://localhost$2" || true)
+                 if [ "$code" != "200" ]; then
+                   healthy=false
+                   echo "$3 is not ready yet (HTTP $code)"
+                 fi
+               done
+               [ "$healthy" = true ] && echo "api and all frontends are up" && exit 0
                sleep 3
              done
-             echo "api did not become healthy" >&2
-             docker compose -f /opt/roomkit/compose.prod.yaml logs --tail=50 api >&2
+             echo "production health check failed" >&2
+             docker compose -f /opt/roomkit/compose.prod.yaml logs --tail=50 api web >&2
              exit 1'

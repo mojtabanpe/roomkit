@@ -7,6 +7,18 @@ export interface JoinTokenResponse {
   serverUrl: string;
   room: string;
   identity: string;
+  limits?: RoomConnectionLimits;
+}
+
+export interface RoomConnectionLimits {
+  maxParticipants: number | null;
+  maxDurationSeconds: number | null;
+  video: {
+    width: number;
+    height: number;
+    frameRate: number;
+    maxBitrate: number;
+  } | null;
 }
 
 /**

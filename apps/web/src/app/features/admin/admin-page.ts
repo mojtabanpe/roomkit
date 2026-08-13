@@ -3,11 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { HlmAlertImports } from '@org/ui-components/alert';
-import { HlmBadge } from '@org/ui-components/badge';
-import { HlmButton } from '@org/ui-components/button';
-import { HlmInput } from '@org/ui-components/input';
-import { HlmLabel } from '@org/ui-components/label';
+import { HlmAlertImports, HlmBadge, HlmButton, HlmInput, HlmLabel } from '@org/ui';
 import {
   AdminService,
   IssuedKey,

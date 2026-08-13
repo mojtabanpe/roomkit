@@ -1,0 +1,11 @@
+@use '../../../libs/ui/src/styles/theme';
+@use '../../../libs/ui/src/styles/dashboard-shell';
+
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import 'tailwindcss/utilities.css';
+@import '@spartan-ng/brain/hlm-tailwind-preset.css';
+
+@source "../../../libs/ui-components";
+@source "./app";

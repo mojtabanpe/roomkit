@@ -22,6 +22,11 @@ import {
   Min,
 } from 'class-validator';
 import { PlanMode } from '../database/entities/tenant.entity';
+import { TenantMember } from '../database/entities/tenant-member.entity';
+import { User } from '../database/entities/user.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { NotFoundException } from '@nestjs/common';
+import { Repository } from 'typeorm';
 import { AdminGuard } from './admin.guard';
 import {
   IssuedKey,
@@ -98,7 +103,11 @@ class UnitsDto {
 @Controller('admin/tenants')
 @UseGuards(AdminGuard)
 export class AdminController {
-  constructor(private readonly tenants: TenantsService) {}
+  constructor(
+    private readonly tenants: TenantsService,
+    @InjectRepository(User) private readonly users: Repository<User>,
+    @InjectRepository(TenantMember) private readonly members: Repository<TenantMember>,
+  ) {}
 
   @Get()
   list(): Promise<TenantSummary[]> {
@@ -154,5 +163,14 @@ export class AdminController {
   @Post(':id/balance/credit-limit')
   creditLimit(@Param('id') id: string, @Body() dto: UnitsDto) {
     return this.tenants.setCreditLimit(id, dto.units);
+  }
+
+  @Post(':id/members')
+  async addMember(@Param('id') id: string, @Body('email') email: string): Promise<{ ok: true }> {
+    const user = await this.users.findOne({ where: { email: email.trim().toLowerCase() } });
+    if (!user) throw new NotFoundException('کاربر با این ایمیل پیدا نشد.');
+    await this.tenants.getTenant(id);
+    await this.members.upsert({ tenantId: id, userId: user.id }, ['tenantId', 'userId']);
+    return { ok: true };
   }
 }

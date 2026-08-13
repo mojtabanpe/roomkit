@@ -5,10 +5,11 @@ import { firstValueFrom } from 'rxjs';
 export interface AuthUser {
   id: string;
   email: string;
+  username: string;
   displayName: string;
 }
 
-interface AuthResult {
+export interface AuthResult {
   token: string;
   user: AuthUser;
 }
@@ -61,17 +62,32 @@ export class AuthService {
 
   async register(
     email: string,
+    username: string,
     displayName: string,
     password: string,
+    tenantKey?: string,
   ): Promise<void> {
     const res = await firstValueFrom(
       this.http.post<AuthResult>('/api/auth/register', {
         email,
+        username,
         displayName,
         password,
+        ...(tenantKey ? { tenantKey } : {}),
       }),
     );
     this.apply(res);
+  }
+
+  async updateProfile(displayName: string, username: string): Promise<void> {
+    this.user.set(
+      await firstValueFrom(
+        this.http.patch<AuthUser>('/api/auth/profile', {
+          displayName,
+          username,
+        }),
+      ),
+    );
   }
 
   logout(): void {
@@ -79,8 +95,13 @@ export class AuthService {
     this.user.set(null);
   }
 
-  private apply(res: AuthResult): void {
+  /** Used by account-creating flows that return the normal auth contract. */
+  establishSession(res: AuthResult): void {
     localStorage.setItem(TOKEN_KEY, res.token);
     this.user.set(res.user);
+  }
+
+  private apply(res: AuthResult): void {
+    this.establishSession(res);
   }
 }

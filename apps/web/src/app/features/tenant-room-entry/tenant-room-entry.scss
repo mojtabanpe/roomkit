@@ -1,0 +1,60 @@
+:host {
+  display: block;
+}
+.page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: min(900px, calc(100% - 32px));
+  margin-inline: auto;
+  padding-block: 24px 64px;
+}
+.page > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.card {
+  width: min(520px, 100%);
+  margin: 72px auto 0;
+  padding: 32px;
+  display: grid;
+  gap: 20px;
+  box-shadow: var(--shadow);
+}
+.room-head {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+}
+h1,
+p {
+  margin: 0;
+}
+h1 {
+  font: var(--headline-md);
+}
+code {
+  direction: ltr;
+  unicode-bidi: isolate;
+  color: var(--primary);
+}
+label {
+  display: grid;
+  gap: 8px;
+}
+.signed {
+  padding: 14px;
+  border-radius: var(--rk-radius-sm);
+  background: var(--surface-container-low);
+  color: var(--on-surface-variant);
+}
+.devices {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.devices label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

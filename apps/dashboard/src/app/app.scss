@@ -1,0 +1,142 @@
+:host {
+  display: block;
+  min-height: 100%;
+}
+h1,
+h2,
+p {
+  margin: 0;
+}
+form,
+.field,
+.dashboard-auth__copy {
+  display: grid;
+}
+form {
+  gap: 18px;
+}
+.field {
+  gap: 8px;
+}
+.dashboard-auth__copy {
+  gap: 8px;
+}
+.dashboard-auth__copy > p:last-child {
+  color: var(--on-surface-variant);
+}
+
+.status-dot {
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 0 4px var(--teal-container);
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.stat {
+  min-block-size: 160px;
+  padding: 24px;
+  box-shadow: var(--shadow-border);
+}
+.stat-label,
+.stat small,
+dt,
+code,
+.empty-state p,
+.overview-panel p:last-child {
+  color: var(--on-surface-variant);
+}
+.stat-label,
+dt {
+  font: var(--label);
+}
+.stat strong {
+  display: block;
+  margin-block: 14px 4px;
+  color: var(--primary);
+  font: var(--headline-md);
+}
+.tabular-number {
+  font-variant-numeric: tabular-nums;
+}
+
+.overview-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-block-start: 20px;
+  padding: 28px;
+  box-shadow: var(--shadow-border);
+}
+.overview-panel > div {
+  display: grid;
+  gap: 6px;
+}
+.subscription-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.subscription-card {
+  min-block-size: 180px;
+  padding: 24px;
+  gap: 24px;
+  box-shadow: var(--shadow-border);
+}
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.card-head h2 {
+  margin-block-end: 4px;
+  font: var(--title-lg);
+}
+dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+dd {
+  margin: 6px 0 0;
+  font-weight: 700;
+}
+.empty-state {
+  display: grid;
+  grid-column: 1 / -1;
+  min-block-size: 280px;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  padding: 40px 24px;
+  text-align: center;
+  box-shadow: var(--shadow-border);
+}
+.empty-icon {
+  inline-size: 52px;
+  block-size: 52px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--rk-radius);
+  background: var(--surface-container-low);
+}
+
+@media (max-width: 760px) {
+  .stats,
+  .subscription-grid {
+    grid-template-columns: 1fr;
+  }
+  .overview-panel {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

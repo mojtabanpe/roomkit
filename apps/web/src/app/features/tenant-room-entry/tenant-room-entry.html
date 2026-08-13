@@ -1,0 +1,64 @@
+<main class="page">
+  <header>
+    <a routerLink="/"><app-logo [size]="32" /></a>@if (auth.isLoggedIn()) {
+    <a hlmBtn variant="ghost" routerLink="/profile">پروفایل</a> } @else {
+    <a hlmBtn variant="ghost" routerLink="/login">ورود کاربر</a> }
+  </header>
+  <section hlmCard class="card">
+    @if (data(); as info) {
+    <div class="room-head">
+      <span hlmBadge variant="secondary">{{ info.tenant.name }}</span>
+      <h1>{{ info.room.name }}</h1>
+      <code>{{ info.tenant.key }}/{{ info.room.slug }}</code>
+    </div>
+    } @if (error(); as text) {
+    <div hlmAlert variant="destructive" role="alert">
+      <p hlmAlertDescription>{{ text }}</p>
+    </div>
+    } @if (!auth.isLoggedIn()) {
+    <label
+      ><span hlmLabel>نام شما</span
+      ><input
+        hlmInput
+        autocomplete="name"
+        [ngModel]="displayName()"
+        (ngModelChange)="displayName.set($event)"
+    /></label>
+    } @else {
+    <p class="signed">
+      با حساب <strong>{{ auth.user()?.username }}</strong> وارد می‌شوید. اگر به
+      این روم تخصیص داده شده باشید کلید لازم نیست.
+    </p>
+    }
+    <label
+      ><span hlmLabel>کلید ورود</span
+      ><input
+        hlmInput
+        dir="ltr"
+        autocomplete="one-time-code"
+        [ngModel]="key()"
+        (ngModelChange)="key.set($event)"
+        placeholder="کلید دریافتی از tenant"
+    /></label>
+    <div class="devices">
+      <label
+        ><input
+          type="checkbox"
+          [ngModel]="mic()"
+          (ngModelChange)="mic.set($event)"
+        />
+        میکروفون روشن</label
+      ><label
+        ><input
+          type="checkbox"
+          [ngModel]="cam()"
+          (ngModelChange)="cam.set($event)"
+        />
+        دوربین روشن</label
+      >
+    </div>
+    <button hlmBtn size="lg" (click)="enter()" [disabled]="busy()">
+      @if (busy()) { <hlm-spinner /> } ورود به روم
+    </button>
+  </section>
+</main>

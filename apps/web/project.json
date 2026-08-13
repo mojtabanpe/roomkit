@@ -69,7 +69,8 @@
         "api:serve"
       ],
       "options": {
-        "proxyConfig": "apps/web/proxy.conf.json"
+        "proxyConfig": "apps/web/proxy.conf.json",
+        "port": 5200
       }
     },
     "lint": {
@@ -91,7 +92,8 @@
       "options": {
         "buildTarget": "web:build",
         "staticFilePath": "dist/apps/web/browser",
-        "spa": true
+        "spa": true,
+        "port": 5300
       }
     }
   }

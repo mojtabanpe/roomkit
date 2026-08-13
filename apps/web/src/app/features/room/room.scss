@@ -62,7 +62,7 @@
 }
 .status[data-state='live'] i {
   background: var(--tertiary);
-  box-shadow: 0 0 0 3px rgba(149, 0, 43, 0.18);
+  box-shadow: var(--tertiary-ring);
 }
 .status[data-state='connecting'],
 .status[data-state='reconnecting'] {
@@ -171,7 +171,9 @@
   color: var(--on-surface-variant);
   font-size: 13px;
   font-weight: 600;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 .tabs button:hover {
   color: var(--on-surface);
@@ -316,7 +318,12 @@ app-participant-tile {
   border: 1px solid var(--outline-variant);
   background: var(--surface-container-lowest);
   color: var(--on-surface);
-  transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 150ms ease-out,
+    scale 150ms ease-out,
+    background 200ms ease-out,
+    border-color 200ms ease-out,
+    box-shadow 150ms ease-out;
 }
 .ctl:hover {
   transform: translateY(-2px);
@@ -324,6 +331,7 @@ app-participant-tile {
 }
 .ctl:active {
   transform: translateY(0);
+  scale: 0.96;
 }
 .ctl .ico {
   --icon-size: 22px;
@@ -359,7 +367,21 @@ app-participant-tile {
   color: var(--on-error);
 }
 .ctl.leave:hover {
-  box-shadow: 0 14px 28px -14px rgba(186, 26, 26, 0.8);
+  box-shadow: var(--error-lift-shadow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ctl {
+    transition: none;
+  }
+
+  .ctl:hover {
+    transform: none;
+  }
+
+  .ctl:active {
+    scale: 1;
+  }
 }
 
 @media (max-width: 560px) {
@@ -368,12 +390,12 @@ app-participant-tile {
     padding: 12px 8px;
   }
   /* hlm-separator is a div; give it the height the flex row needs. */
-.divider {
-  align-self: stretch;
-  margin-inline: 4px;
-}
+  .divider {
+    align-self: stretch;
+    margin-inline: 4px;
+  }
 
-.ctl {
+  .ctl {
     min-width: 62px;
     padding: 9px 6px;
   }

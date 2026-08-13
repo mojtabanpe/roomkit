@@ -6,7 +6,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
-export type UsageKind = 'participant' | 'egress';
+export type UsageKind = 'participant' | 'room' | 'egress';
 
 /**
  * One billable stay, closed out from LiveKit webhooks.

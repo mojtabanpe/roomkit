@@ -10,7 +10,13 @@
 set -euo pipefail
 
 EMAIL="${1:-}"
-DOMAINS=(roomkit.ir www.roomkit.ir livekit.roomkit.ir)
+DOMAINS=(
+  roomkit.ir
+  www.roomkit.ir
+  dashboard.roomkit.ir
+  tenant.roomkit.ir
+  livekit.roomkit.ir
+)
 COMPOSE=(docker compose -f compose.prod.yaml)
 STAGING="${STAGING:-0}"   # STAGING=1 uses Let's Encrypt's test CA (no rate limit)
 
