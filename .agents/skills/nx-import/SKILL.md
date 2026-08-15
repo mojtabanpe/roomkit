@@ -9,7 +9,7 @@ description: Import, merge, or combine repositories into an Nx workspace using n
 - After nx `22.6.0`, `nx import` responds with .ndjson outputs and follow-up questions. For earlier versions, always run with `--no-interactive` and specify all flags directly.
 - Run `nx import --help` for available options.
 - Make sure the destination directory is empty before importing.
-  EXAMPLE: target has `packages/utils` and `packages/models`; source has `packages/ui` and `packages/data-access` — you cannot import `packages/` into `packages/` directly. Import each source library individually.
+  EXAMPLE: target has `libs/utils` and `libs/models`; source has `libs/ui` and `libs/data-access` — you cannot import `libs/` into `libs/` directly. Import each source library individually.
 
 Primary docs:
 
@@ -34,7 +34,7 @@ Read the nx docs if you have the tools for it.
 
 ### Directory Conventions
 
-- **Always prefer the destination's existing conventions.** Source uses `packages/`but dest uses `packages/`? Import into `packages/` (`nx import <source> packages/foo --source=packages/foo`).
+- **Always prefer the destination's existing conventions.** Source uses `libs/`but dest uses `packages/`? Import into `packages/` (`nx import <source> packages/foo --source=libs/foo`).
 - If dest has no convention (empty workspace), ask the user.
 
 ### Application vs Library Detection
@@ -54,7 +54,7 @@ Before importing, identify whether the source is an **application** or a **libra
 - Applications → `apps/<name>`. Check workspace globs (e.g. `pnpm-workspace.yaml`, `workspaces` in root `package.json`) for an existing `apps/*` entry.
   - If `apps/*` is **not** present, add it before importing: update the workspace glob config and commit (or stage) the change.
   - Example: `nx import <source> apps/my-app --source=packages/my-app`
-- Libraries → follow the dest's existing convention (`packages/`, `packages/`, etc.).
+- Libraries → follow the dest's existing convention (`packages/`, `libs/`, etc.).
 
 ## Common Issues
 
@@ -62,7 +62,7 @@ Before importing, identify whether the source is an **application** or a **libra
 
 `nx import` adds the imported directory itself (e.g. `apps`) to `pnpm-workspace.yaml`, **NOT** glob patterns for packages within it. Cross-package imports will fail with `Cannot find module`.
 
-**Fix**: Replace with proper globs from the source config (e.g. `apps/*`, `packages/shared/*`), then `pnpm install`.
+**Fix**: Replace with proper globs from the source config (e.g. `apps/*`, `libs/shared/*`), then `pnpm install`.
 
 ### Root Dependencies and Config Not Imported (Critical)
 

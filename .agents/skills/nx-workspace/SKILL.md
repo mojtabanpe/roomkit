@@ -240,7 +240,7 @@ Example output:
       "shared-ui": {
         "name": "shared-ui",
         "type": "lib",
-        "data": { "root": "packages/shared-ui", "tags": ["type:ui"] }
+        "data": { "root": "libs/shared-ui", "tags": ["type:ui"] }
       }
     },
     "dependencies": {

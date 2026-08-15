@@ -318,7 +318,7 @@ Do **not** remove React Router 7 scripts. They use the framework CLI (`react-rou
 
 ### Multiple-Source Imports
 
-See SKILL.md for generic multi-import (name collisions, dep refs). Vite-specific: fix tsconfig `references` paths for alternate directories (`../../packages/` → `../../libs-beta/`).
+See SKILL.md for generic multi-import (name collisions, dep refs). Vite-specific: fix tsconfig `references` paths for alternate directories (`../../libs/` → `../../libs-beta/`).
 
 ### Non-Nx Source: React Router 7
 

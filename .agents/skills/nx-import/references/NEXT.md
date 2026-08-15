@@ -165,7 +165,7 @@ No naming conflicts between frameworks.
 - Dest: CNW ts preset (Nx 23)
 - Import: subdirectory-at-a-time (apps, libs separately)
 - Errors found & fixed:
-  1. pnpm-workspace.yaml: `apps`/`libs` → `apps/*`/`packages/*`
+  1. pnpm-workspace.yaml: `apps`/`libs` → `apps/*`/`libs/*`
   2. Root tsconfig: `nodenext` → `bundler`, add `dom`/`dom.iterable` to `lib`, add `jsx: react-jsx`
   3. Missing `@nx/react` (for CSS module/image type defs in lib)
   4. Missing `@types/react`, `@types/react-dom`, `@types/node`

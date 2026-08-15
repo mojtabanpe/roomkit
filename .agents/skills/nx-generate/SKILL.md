@@ -1,6 +1,6 @@
 ---
 name: nx-generate
-description: Generate code using nx generators. INVOKE IMMEDIATELY when user mentions scaffolding, setup, structure, creating apps/libs, or setting up project structure. Trigger words - scaffold, setup, create a ... app, create a ... lib, project structure, generate, add a new project. ALWAYS use this BEFORE calling nx_docs or exploring - this skill handles discovery internally.
+description: Generate code using nx generators. INVOKE IMMEDIATELY when user mentions scaffolding, setup, structure, creating apps/libs, or setting up project structure. Trigger words - scaffold, setup, create a new app, create a new lib, project structure, generate, add a new project. ALWAYS use this BEFORE calling nx_docs or exploring - this skill handles discovery internally.
 ---
 
 # Run Nx Generator
@@ -95,12 +95,12 @@ After reading the source, reconsider: Is this the right generator? If not, go ba
 >
 > ```bash
 > # ✅ Correct - directory is the full path for the library
-> nx g @nx/react:library --directory=packages/my-lib
-> # generates packages/my-lib/package.json and more
+> nx g @nx/react:library --directory=libs/my-lib
+> # generates libs/my-lib/package.json and more
 >
-> # ❌ Wrong - this will create files at libs and packages/src/...
+> # ❌ Wrong - this will create files at libs and libs/src/...
 > nx g @nx/react:library --name=my-lib --directory=libs
-> # generates packages/package.json and more
+> # generates libs/package.json and more
 > ```
 
 ### 5. Examine Existing Patterns
