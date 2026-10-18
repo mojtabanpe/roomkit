@@ -115,4 +115,39 @@ describe('LivekitService participant control', () => {
       service.setPublishSources('t_room', 'u-1', []),
     ).rejects.toThrow('boom');
   });
+
+  describe('join tokens', () => {
+    const configured = new LivekitService({
+      get: (key: string) =>
+        ({
+          LIVEKIT_API_KEY: 'devkey',
+          LIVEKIT_API_SECRET: 'a-test-secret-that-is-long-enough',
+          LIVEKIT_URL: 'ws://localhost:7880',
+        })[key],
+    } as never);
+    const videoGrant = (token: string) =>
+      JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString())
+        .video;
+
+    it('narrows publishing to the sources it names', async () => {
+      const { token } = await configured.createJoinToken({
+        room: 'r',
+        identity: 'u-1',
+        canPublish: true,
+        publishSources: [TrackSource.MICROPHONE],
+      });
+      expect(videoGrant(token)).toMatchObject({
+        canPublish: true,
+        canPublishSources: ['microphone'],
+      });
+    });
+
+    it('leaves every source open when none is named', async () => {
+      const { token } = await configured.createJoinToken({
+        room: 'r',
+        identity: 'u-1',
+      });
+      expect(videoGrant(token).canPublishSources).toBeUndefined();
+    });
+  });
 });

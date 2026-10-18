@@ -20,6 +20,8 @@ export interface JoinTokenRequest {
   name?: string;
   /** Viewer-only plans mint tokens that cannot publish. */
   canPublish?: boolean;
+  /** Narrows `canPublish` to these sources; omitted means every source. */
+  publishSources?: TrackSource[];
   /** Product limits the client must apply when publishing media. */
   limits?: RoomConnectionLimits;
 }
@@ -71,6 +73,9 @@ export class LivekitService {
       canSubscribe: true,
       canPublishData: true,
     };
+    if (grant.canPublish && req.publishSources?.length) {
+      grant.canPublishSources = req.publishSources;
+    }
     at.addGrant(grant);
 
     const token = await at.toJwt();

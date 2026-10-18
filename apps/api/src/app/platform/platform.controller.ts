@@ -45,6 +45,29 @@ import { BalanceView, UsageService } from '../usage/usage.service';
 /** Same cost as user passwords — a 4-6 digit PIN is worth slowing down. */
 const PASSCODE_ROUNDS = 12;
 
+/**
+ * Track sources as the platform names them. Kept to LiveKit's own four so a
+ * value here always means exactly one `TrackSource`.
+ */
+const SOURCE_NAMES = [
+  'camera',
+  'microphone',
+  'screen_share',
+  'screen_share_audio',
+] as const;
+type SourceName = (typeof SOURCE_NAMES)[number];
+
+const SOURCE_TO_TRACK: Record<SourceName, TrackSource> = {
+  camera: TrackSource.CAMERA,
+  microphone: TrackSource.MICROPHONE,
+  screen_share: TrackSource.SCREEN_SHARE,
+  screen_share_audio: TrackSource.SCREEN_SHARE_AUDIO,
+};
+
+const TRACK_TO_SOURCE = new Map<TrackSource, SourceName>(
+  SOURCE_NAMES.map((name) => [SOURCE_TO_TRACK[name], name]),
+);
+
 class CreateRoomDto {
   @IsString()
   @IsNotEmpty()
@@ -89,30 +112,17 @@ class MintTokenDto {
   @IsOptional()
   @IsBoolean()
   canPublish?: boolean;
+
+  /**
+   * Narrows `canPublish` to these sources, so a student allowed to speak cannot
+   * also turn a camera on. Omitted means every source.
+   */
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsIn(SOURCE_NAMES, { each: true })
+  sources?: SourceName[];
 }
-
-/**
- * Track sources as the platform names them. Kept to LiveKit's own four so a
- * value here always means exactly one `TrackSource`.
- */
-const SOURCE_NAMES = [
-  'camera',
-  'microphone',
-  'screen_share',
-  'screen_share_audio',
-] as const;
-type SourceName = (typeof SOURCE_NAMES)[number];
-
-const SOURCE_TO_TRACK: Record<SourceName, TrackSource> = {
-  camera: TrackSource.CAMERA,
-  microphone: TrackSource.MICROPHONE,
-  screen_share: TrackSource.SCREEN_SHARE,
-  screen_share_audio: TrackSource.SCREEN_SHARE_AUDIO,
-};
-
-const TRACK_TO_SOURCE = new Map<TrackSource, SourceName>(
-  SOURCE_NAMES.map((name) => [SOURCE_TO_TRACK[name], name]),
-);
 
 class MuteDto {
   /** What to mute. Omitted means the microphone — the usual "quiet, please". */
@@ -299,6 +309,7 @@ export class PlatformController {
       identity: dto.identity,
       name: dto.name,
       canPublish: dto.canPublish,
+      publishSources: dto.sources?.map((name) => SOURCE_TO_TRACK[name]),
       limits,
     });
   }
