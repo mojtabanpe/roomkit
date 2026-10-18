@@ -101,6 +101,45 @@ curl -X POST https://roomkit.ir/api/v1/rooms/standup/tokens \
 
 ---
 
+## ۴-۱. مدیریت شرکت‌کنندگان از سمت سرور
+
+همهٔ این کارها روی اتصالِ **زنده** انجام می‌شود؛ کسی که الان در اتاق نیست پاسخ
+**۴۰۴** می‌گیرد.
+
+```bash
+# چه کسانی الان داخل اتاق‌اند، چه اجازه‌ای دارند و چه می‌فرستند
+curl https://roomkit.ir/api/v1/rooms/standup/participants -H "X-Api-Key: $ROOMKIT_API_KEY"
+
+# اجازهٔ صحبت، بدون قطع و وصل: فقط میکروفون
+curl -X POST https://roomkit.ir/api/v1/rooms/standup/participants/user-42/permissions \
+  -H "X-Api-Key: $ROOMKIT_API_KEY" -H 'Content-Type: application/json' \
+  -d '{"canPublish":true,"sources":["microphone"]}'
+
+# پس گرفتن اجازه (ترک‌های در حال ارسال هم خودبه‌خود بسته می‌شوند)
+curl -X POST https://roomkit.ir/api/v1/rooms/standup/participants/user-42/permissions \
+  -H "X-Api-Key: $ROOMKIT_API_KEY" -H 'Content-Type: application/json' \
+  -d '{"canPublish":false}'
+
+# بی‌صدا کردن (پیش‌فرض فقط میکروفون؛ با sources می‌شود دوربین را هم بست)
+curl -X POST https://roomkit.ir/api/v1/rooms/standup/participants/user-42/mute \
+  -H "X-Api-Key: $ROOMKIT_API_KEY"
+
+# قطع اتصال یک نفر (با توکن تازه می‌تواند برگردد — جلوگیری از بازگشت با شماست)
+curl -X DELETE https://roomkit.ir/api/v1/rooms/standup/participants/user-42 \
+  -H "X-Api-Key: $ROOMKIT_API_KEY"
+```
+
+- `sources` یکی یا چند تا از `microphone` · `camera` · `screen_share` ·
+  `screen_share_audio` است. اگر با `canPublish: true` نفرستید، همه مجازند.
+- تغییر اجازه فقط برای **همین اتصال** است. مرورگر شرکت‌کننده رویداد
+  `ParticipantPermissionsChanged` را می‌گیرد و می‌تواند همان لحظه میکروفون را
+  باز کند. توکن بعدی دوباره از `canPublish` خودِ توکن پیروی می‌کند، پس اجازه را
+  در سیستم خودتان هم نگه دارید.
+- بی‌صدا کردن را خود شرکت‌کننده می‌تواند برگرداند؛ برای گرفتن واقعی اجازهٔ
+  صحبت از `permissions` استفاده کنید.
+
+---
+
 ## ۵. اتصال از فرانت‌اند
 
 هر SDK کلاینت لای‌وکیت کار می‌کند. با `livekit-client`:
@@ -174,6 +213,10 @@ curl https://roomkit.ir/api/v1/usage -H "X-Api-Key: $ROOMKIT_API_KEY"
 | `GET` | `/api/v1/rooms/:slug` | یک اتاق |
 | `DELETE` | `/api/v1/rooms/:slug` | حذف اتاق (تماس جاری را قطع نمی‌کند) |
 | `POST` | `/api/v1/rooms/:slug/tokens` | توکن ورود |
+| `GET` | `/api/v1/rooms/:slug/participants` | چه کسانی داخل اتاق‌اند |
+| `POST` | `/api/v1/rooms/:slug/participants/:identity/permissions` | دادن یا گرفتن اجازهٔ انتشار، بدون اتصال دوباره |
+| `POST` | `/api/v1/rooms/:slug/participants/:identity/mute` | بی‌صدا کردن یک نفر |
+| `DELETE` | `/api/v1/rooms/:slug/participants/:identity` | قطع اتصال یک نفر |
 | `GET` | `/api/v1/usage` | اعتبار و مصرف |
 
 خطاها: `401` کلید نامعتبر یا پلتفرم معلق · `402` اعتبار تمام ·
