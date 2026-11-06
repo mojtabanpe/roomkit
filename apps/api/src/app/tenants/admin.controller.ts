@@ -80,6 +80,25 @@ class UpdateTenantDto {
   @IsOptional()
   @IsBoolean()
   active?: boolean;
+
+  /** Seconds. Raise it for a tenant whose calls are class-length, not demo-length. */
+  @IsOptional()
+  @IsInt()
+  @Min(60)
+  @Max(12 * 60 * 60)
+  maxSessionSeconds?: number;
+
+  /** Where room events are POSTed. Empty string clears it. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  webhookUrl?: string;
+
+  /** Signing key for those posts. Empty string clears it. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  webhookSecret?: string;
 }
 
 class IssueKeyDto {

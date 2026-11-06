@@ -96,8 +96,83 @@ curl -X POST https://roomkit.ir/api/v1/rooms/standup/tokens \
   دو اتصال زندهٔ هم‌نام، یکدیگر را بیرون می‌اندازند.
 - `canPublish: false` برای تماشاگری که فقط می‌بیند و نمی‌تواند صدا و تصویر
   بفرستد.
+- `roomAdmin: true` به آن شرکت‌کننده اجازهٔ **مدیریت داخل اتاق** می‌دهد: بی‌صدا
+  کردن دیگران، اخراج، و تغییر دسترسی آن‌ها — بدون این‌که برای هر کار به این API
+  برگردد. برای معلم یا میزبان جلسه بدهید، و فقط به یک نفر.
 - اگر اعتبار حساب تمام شده باشد، پاسخ **۴۰۲** است — نه ۴۰۳ و نه ۵۰۰. این را در
   کد خود جدا هندل کنید و به کاربر پیام درست بدهید.
+
+---
+
+## ۴-۱. مدیریت شرکت‌کنندگان از سمت سرور
+
+اگر ترجیح می‌دهید کنترل جلسه در بک‌اند خودتان بماند (به‌جای دادن `roomAdmin` به
+مرورگر معلم)، همان کارها از این‌جا هم انجام می‌شود:
+
+```bash
+# چه کسانی الان داخل اتاق‌اند و چه چیزی می‌فرستند
+curl https://roomkit.ir/api/v1/rooms/standup/participants -H "X-Api-Key: $ROOMKIT_API_KEY"
+
+# بی‌صدا کردن همهٔ ترک‌های یک نفر
+curl -X POST https://roomkit.ir/api/v1/rooms/standup/participants/user-42/mute \
+  -H "X-Api-Key: $ROOMKIT_API_KEY"
+
+# قطع اتصال یک نفر (با توکن تازه می‌تواند برگردد — جلوگیری از بازگشت با شماست)
+curl -X DELETE https://roomkit.ir/api/v1/rooms/standup/participants/user-42 \
+  -H "X-Api-Key: $ROOMKIT_API_KEY"
+
+# پایان دادن به تماس برای همه (رکورد اتاق می‌ماند)
+curl -X POST https://roomkit.ir/api/v1/rooms/standup/end -H "X-Api-Key: $ROOMKIT_API_KEY"
+```
+
+---
+
+## ۴-۲. ضبط جلسه
+
+> **هنوز روی roomkit.ir فعال نیست.** تا وقتی یک بک‌اند ضبط نصب نشده باشد،
+> `POST .../recordings` پاسخ **۵۰۳** می‌دهد. بقیهٔ این بخش قرارداد آن است، برای
+> وقتی که فعال شود.
+>
+> چرا LiveKit Egress استفاده نشده: Egress برای هماهنگی به یک `redis:` در
+> `livekit.yaml` نیاز دارد، و همین یک خط LiveKit را از حالت تک‌نودی به حالت
+> توزیع‌شده می‌برد که در آن redis انبارهٔ مشترک وضعیت اتاق‌ها می‌شود — یعنی
+> ساخت اتاق و ورود شرکت‌کننده هم از آن رد می‌شود. آن‌وقت یک اختلال در redis
+> کلاس‌ها را می‌خواباند، نه فقط ضبط را.
+
+یک ضبط در هر لحظه برای هر اتاق. شروع دوباره روی اتاقی که در حال ضبط است `409`
+می‌گیرد.
+
+```bash
+curl -X POST https://roomkit.ir/api/v1/rooms/standup/recordings \
+  -H "X-Api-Key: $ROOMKIT_API_KEY" -H 'Content-Type: application/json' \
+  -d '{"startedBy":"user-42"}'
+
+curl -X POST https://roomkit.ir/api/v1/rooms/standup/recordings/stop \
+  -H "X-Api-Key: $ROOMKIT_API_KEY"
+
+curl https://roomkit.ir/api/v1/rooms/standup/recordings -H "X-Api-Key: $ROOMKIT_API_KEY"
+```
+
+```json
+[
+  {
+    "id": "0c1f…",
+    "slug": "standup",
+    "status": "complete",
+    "durationSeconds": 5412,
+    "sizeBytes": 986431488,
+    "playbackUrl": "https://roomkit.ir/api/recordings/0c1f…/file?expires=…&signature=…"
+  }
+]
+```
+
+- `status` یکی از `starting` · `active` · `complete` · `failed` است. تا وقتی
+  `complete` نشده `playbackUrl` برابر `null` است.
+- `playbackUrl` **امضاشده و مدت‌دار** است (پیش‌فرض ۶ ساعت) و مستقیم در تگ
+  `<video>` باز می‌شود — نیازی به کلید API ندارد. هر بار که فهرست را می‌گیرید
+  لینک تازه‌ای ساخته می‌شود، پس لینک را ذخیرهٔ دائم نکنید؛ `id` را ذخیره کنید.
+- پاسخ به Range request می‌دهد، یعنی دانش‌آموز می‌تواند وسط ویدئو بپرد.
+- حذف: `DELETE /api/v1/recordings/:id`.
 
 ---
 
@@ -165,6 +240,45 @@ curl https://roomkit.ir/api/v1/usage -H "X-Api-Key: $ROOMKIT_API_KEY"
 
 ---
 
+## ۶-۱. وبهوک رویدادهای اتاق
+
+به‌جای حدس‌زدن این‌که چه کسی کِی رفت، بگذارید روم‌کیت خبر بدهد. آدرس و کلید
+امضا را ادمین روی حساب شما تنظیم می‌کند:
+
+```bash
+curl -X PATCH https://roomkit.ir/api/admin/tenants/$TENANT_ID \
+  -H "X-Admin-Token: $ADMIN_TOKEN" -H 'Content-Type: application/json' \
+  -d '{"webhookUrl":"https://gamschools.ir/api/roomkit/events","webhookSecret":"..."}'
+```
+
+بدنهٔ ارسالی:
+
+```json
+{ "event": "participant_left", "room": "standup", "at": "2026-08-26T09:31:04.000Z",
+  "identity": "u-42", "name": "مجتبی" }
+```
+
+رویدادها: `participant_joined` · `participant_left` · `room_finished` ·
+`recording_ready` (این آخری `recording: { id, url, durationSeconds }` هم دارد).
+
+**امضا** در هدر `X-Roomkit-Signature` به شکل `sha256=<hex>` می‌آید و روی بایت‌های
+دقیق بدنه با HMAC-SHA256 محاسبه شده است. در گیرنده:
+
+```ts
+const expected = 'sha256=' + createHmac('sha256', secret).update(rawBody).digest('hex');
+// با timingSafeEqual مقایسه کنید، نه با ===
+```
+
+نکته‌های عملی:
+
+- `room` همیشه **slug خودتان** است، نه نام namespaced لای‌وکیت.
+- ارسال **یک‌بار و بدون retry** است. اگر endpoint شما بالا نباشد آن رویداد از
+  دست می‌رود — روم‌کیت عمداً دوباره نمی‌فرستد تا یک گیرندهٔ خراب به حلقهٔ
+  بی‌پایان تبدیل نشود. حساب نهایی را از دادهٔ خودتان ببندید.
+- تایم‌اوت ۵ ثانیه است؛ سریع `200` بدهید و کار سنگین را پس‌زمینه ببرید.
+
+---
+
 ## ۷. همهٔ endpointها
 
 | متد | مسیر | کار |
@@ -174,6 +288,15 @@ curl https://roomkit.ir/api/v1/usage -H "X-Api-Key: $ROOMKIT_API_KEY"
 | `GET` | `/api/v1/rooms/:slug` | یک اتاق |
 | `DELETE` | `/api/v1/rooms/:slug` | حذف اتاق (تماس جاری را قطع نمی‌کند) |
 | `POST` | `/api/v1/rooms/:slug/tokens` | توکن ورود |
+| `GET` | `/api/v1/rooms/:slug/participants` | چه کسانی داخل اتاق‌اند |
+| `POST` | `/api/v1/rooms/:slug/participants/:identity/mute` | بی‌صدا کردن یک نفر |
+| `DELETE` | `/api/v1/rooms/:slug/participants/:identity` | قطع اتصال یک نفر |
+| `POST` | `/api/v1/rooms/:slug/end` | پایان تماس برای همه |
+| `POST` | `/api/v1/rooms/:slug/recordings` | شروع ضبط |
+| `POST` | `/api/v1/rooms/:slug/recordings/stop` | توقف ضبط |
+| `GET` | `/api/v1/rooms/:slug/recordings` | ضبط‌های یک اتاق |
+| `GET` | `/api/v1/recordings` | همهٔ ضبط‌های شما |
+| `DELETE` | `/api/v1/recordings/:id` | حذف یک ضبط |
 | `GET` | `/api/v1/usage` | اعتبار و مصرف |
 
 خطاها: `401` کلید نامعتبر یا پلتفرم معلق · `402` اعتبار تمام ·

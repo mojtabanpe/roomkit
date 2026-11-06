@@ -51,6 +51,16 @@ services:
       LIVEKIT_API_KEY: roomkit
       LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
       LIVEKIT_URL: ${LIVEKIT_URL}
+      # Must match the egress container's mount below — egress writes the mp4,
+      # the api streams it back out. Disagreeing paths mean 404s for files that
+      # exist on disk.
+      RECORDINGS_DIR: /recordings
+      # Signs playback links. Falls back to LIVEKIT_API_SECRET when unset, so a
+      # missing value degrades to "reuses another secret", never to "unsigned".
+      RECORDING_LINK_SECRET: ${RECORDING_LINK_SECRET:-}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://roomkit.ir}
+    volumes:
+      - recordings:/recordings:ro
     expose:
       - '3000'
 
@@ -114,3 +124,8 @@ services:
 volumes:
   pgdata:
   letsencrypt:
+  # Finished mp4s, served by the api. Empty until a recorder is deployed that
+  # writes here — see livekit/livekit.yaml for why that recorder is not Egress.
+  # It grows without bound once used (a 90-minute 720p class is roughly 1GB), so
+  # prune it on a schedule or from the platform (DELETE /api/v1/recordings/:id).
+  recordings:

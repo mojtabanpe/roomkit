@@ -130,12 +130,22 @@ export class TenantsService {
       planMode?: PlanMode;
       maxParticipants?: number | null;
       active?: boolean;
+      maxSessionSeconds?: number | null;
+      webhookUrl?: string;
+      webhookSecret?: string;
     },
   ): Promise<TenantSummary> {
     const tenant = await this.tenants.findOne({ where: { id } });
     if (!tenant) throw new NotFoundException('مستأجر پیدا نشد.');
 
-    Object.assign(tenant, patch);
+    const { webhookUrl, webhookSecret, ...rest } = patch;
+    Object.assign(tenant, rest);
+    // An empty string is how the caller says "stop sending me events"; an
+    // absent field means "leave it alone". The two must not collapse.
+    if (webhookUrl !== undefined) tenant.webhookUrl = webhookUrl || null;
+    if (webhookSecret !== undefined) {
+      tenant.webhookSecret = webhookSecret || null;
+    }
     await this.tenants.save(tenant);
 
     const balance = await this.balances.findOne({ where: { tenantId: id } });

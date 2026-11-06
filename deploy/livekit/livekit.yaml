@@ -40,5 +40,19 @@ webhook:
   urls:
     - 'https://roomkit.ir/api/livekit/webhook'
 
+# NO `redis:` BLOCK HERE — ON PURPOSE.
+#
+# Adding one is the only way to use LiveKit Egress for recording, and it is
+# also the thing that must never happen on this box. Configuring redis switches
+# LiveKit out of single-node mode into *distributed* mode, where redis becomes
+# the shared store and message bus for room state — so room creation and
+# participant joins start going through it. Redis then sits on the class path:
+# if it hiccups, calls stop. That is reported behaviour, not a theory
+# (livekit/livekit#2464, #2874, #3536).
+#
+# Recording therefore has to come from something that joins the room as an
+# ordinary participant, so that losing the recorder loses only the recording.
+# See docs/platform/README.md → recording.
+
 logging:
   level: info

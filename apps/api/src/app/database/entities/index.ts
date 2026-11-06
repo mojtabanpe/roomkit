@@ -1,6 +1,7 @@
 import { ApiKey } from './api-key.entity';
 import { MeetingSession } from './meeting-session.entity';
 import { Message } from './message.entity';
+import { Recording } from './recording.entity';
 import { Room } from './room.entity';
 import { TenantBalance } from './tenant-balance.entity';
 import { Tenant } from './tenant.entity';
@@ -24,4 +25,5 @@ export const ENTITIES = [
   ApiKey,
   TenantBalance,
   UsageEvent,
+  Recording,
 ];

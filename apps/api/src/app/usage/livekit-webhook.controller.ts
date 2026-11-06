@@ -8,11 +8,13 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { TrackSource, TrackType } from 'livekit-server-sdk';
+import { EgressStatus, TrackSource, TrackType } from 'livekit-server-sdk';
 import { Tenant } from '../database/entities/tenant.entity';
 import { LivekitService } from '../livekit/livekit.service';
+import { RecordingsService } from '../recordings/recordings.service';
 import { parseLivekitRoomName } from '../tenants/room-name';
 import { TenantRoomPolicyService } from '../tenants/tenant-room-policy.service';
+import { TenantWebhookService } from '../tenants/tenant-webhook.service';
 import { TenantsService } from '../tenants/tenants.service';
 import { UsageService } from './usage.service';
 
@@ -28,6 +30,8 @@ export class LivekitWebhookController {
     private readonly tenants: TenantsService,
     private readonly usage: UsageService,
     private readonly policies: TenantRoomPolicyService,
+    private readonly forward: TenantWebhookService,
+    private readonly recordings: RecordingsService,
   ) {}
 
   /**
@@ -90,6 +94,12 @@ export class LivekitWebhookController {
           sourceSid: event.participant.sid,
           startedAt: toDate(event.participant.joinedAt),
         });
+        await this.forward.emit(room, {
+          event: 'participant_joined',
+          at: toDate(event.participant.joinedAt).toISOString(),
+          identity: event.participant.identity,
+          name: event.participant.name,
+        });
         break;
       }
       case 'track_published': {
@@ -117,11 +127,57 @@ export class LivekitWebhookController {
       case 'participant_connection_aborted': {
         if (!event.participant) break;
         await this.usage.closeStay(event.participant.sid, at);
+        if (room) {
+          await this.forward.emit(room, {
+            event: 'participant_left',
+            at: at.toISOString(),
+            identity: event.participant.identity,
+            name: event.participant.name,
+          });
+        }
         break;
       }
       case 'room_finished': {
         if (!room) break;
         await this.usage.closeRoom(room, at);
+        await this.forward.emit(room, {
+          event: 'room_finished',
+          at: at.toISOString(),
+        });
+        break;
+      }
+      case 'egress_started':
+      case 'egress_updated': {
+        if (!event.egressInfo) break;
+        await this.recordings.markActive(event.egressInfo.egressId);
+        break;
+      }
+      case 'egress_ended': {
+        const info = event.egressInfo;
+        if (!info) break;
+        const file = info.fileResults?.[0];
+        const row = await this.recordings.settle(
+          info.egressId,
+          info.status === EgressStatus.EGRESS_COMPLETE ? 'complete' : 'failed',
+          {
+            ...(file?.duration
+              ? { durationSeconds: Number(file.duration) / 1e9 }
+              : {}),
+            ...(file?.size ? { sizeBytes: Number(file.size) } : {}),
+          },
+        );
+        // Only announce a recording the tenant can actually play.
+        if (row?.status === 'complete') {
+          await this.forward.emit(row.room, {
+            event: 'recording_ready',
+            at: at.toISOString(),
+            recording: {
+              id: row.id,
+              url: this.recordings.playbackUrl(row.id),
+              durationSeconds: row.durationSeconds,
+            },
+          });
+        }
         break;
       }
       default:

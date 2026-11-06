@@ -33,7 +33,10 @@ export class TenantRoomPolicyService {
   ) {}
 
   limits(
-    tenant: Pick<Tenant, 'planMode' | 'maxParticipants'>,
+    tenant: Pick<
+      Tenant,
+      'planMode' | 'maxParticipants' | 'maxSessionSeconds'
+    >,
     requestedParticipants?: number | null,
   ): RoomConnectionLimits {
     const planLimit =
@@ -54,7 +57,14 @@ export class TenantRoomPolicyService {
           : Math.min(planLimit, requested);
 
     return tenant.planMode === 'prepaid'
-      ? { ...FREE_ROOM_LIMITS, maxParticipants }
+      ? {
+          ...FREE_ROOM_LIMITS,
+          maxParticipants,
+          // A 30-minute cut is right for a trial and wrong for a 90-minute
+          // class — a tenant who has been given a longer session keeps it.
+          maxDurationSeconds:
+            tenant.maxSessionSeconds ?? FREE_ROOM_LIMITS.maxDurationSeconds,
+        }
       : {
           maxParticipants,
           maxDurationSeconds: null,

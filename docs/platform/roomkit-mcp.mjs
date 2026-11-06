@@ -118,12 +118,75 @@ const TOOLS = [
           description:
             'Set false for a viewer who may watch but not send audio or video. Defaults to true.',
         },
+        roomAdmin: {
+          type: 'boolean',
+          description:
+            'Grants moderator powers inside the room — mute, remove, and change the permissions of others. Give it to the host or teacher only. Defaults to false.',
+        },
       },
       required: ['slug', 'identity'],
       additionalProperties: false,
     },
     handler: ({ slug, ...body }) =>
       call('POST', `/api/v1/rooms/${encodeURIComponent(slug)}/tokens`, body),
+  },
+  {
+    name: 'roomkit_list_participants',
+    description:
+      'Who is connected to a room right now, and what each of them is publishing. Your own records know who was invited; this knows who actually showed up.',
+    inputSchema: {
+      type: 'object',
+      properties: { slug: { type: 'string' } },
+      required: ['slug'],
+      additionalProperties: false,
+    },
+    handler: ({ slug }) =>
+      call('GET', `/api/v1/rooms/${encodeURIComponent(slug)}/participants`),
+  },
+  {
+    name: 'roomkit_mute_participant',
+    description:
+      'Mute every track one participant is publishing — mic, camera and screen share.',
+    inputSchema: {
+      type: 'object',
+      properties: { slug: { type: 'string' }, identity: { type: 'string' } },
+      required: ['slug', 'identity'],
+      additionalProperties: false,
+    },
+    handler: ({ slug, identity }) =>
+      call(
+        'POST',
+        `/api/v1/rooms/${encodeURIComponent(slug)}/participants/${encodeURIComponent(identity)}/mute`,
+      ),
+  },
+  {
+    name: 'roomkit_remove_participant',
+    description:
+      'Disconnect one participant. They can return with a fresh token — keeping them out is your side, since you decide who gets one.',
+    inputSchema: {
+      type: 'object',
+      properties: { slug: { type: 'string' }, identity: { type: 'string' } },
+      required: ['slug', 'identity'],
+      additionalProperties: false,
+    },
+    handler: ({ slug, identity }) =>
+      call(
+        'DELETE',
+        `/api/v1/rooms/${encodeURIComponent(slug)}/participants/${encodeURIComponent(identity)}`,
+      ),
+  },
+  {
+    name: 'roomkit_end_session',
+    description:
+      'End the live call for everyone in a room. The room record itself stays.',
+    inputSchema: {
+      type: 'object',
+      properties: { slug: { type: 'string' } },
+      required: ['slug'],
+      additionalProperties: false,
+    },
+    handler: ({ slug }) =>
+      call('POST', `/api/v1/rooms/${encodeURIComponent(slug)}/end`),
   },
   {
     name: 'roomkit_usage',

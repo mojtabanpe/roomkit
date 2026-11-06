@@ -1,6 +1,7 @@
 import { InitialSchema1785658283780 } from './1785658283780-InitialSchema';
 import { AddTenantMembers1786000000000 } from './1786000000000-AddTenantMembers';
 import { AddIndependentTenantAccounts1786700000000 } from './1786700000000-AddIndependentTenantAccounts';
+import { AddTenantWebhooksAndSessionCap1787200000000 } from './1787200000000-AddTenantWebhooksAndSessionCap';
 
 /**
  * Migrations are listed explicitly rather than found with a glob.
@@ -16,4 +17,5 @@ export const MIGRATIONS = [
   InitialSchema1785658283780,
   AddTenantMembers1786000000000,
   AddIndependentTenantAccounts1786700000000,
+  AddTenantWebhooksAndSessionCap1787200000000,
 ];

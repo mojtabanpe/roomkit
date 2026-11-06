@@ -24,6 +24,7 @@ import { TenantRoomsController } from './tenant-rooms.controller';
 import { TenantRoomsService } from './tenant-rooms.service';
 import { TenantSessionGuard } from './tenant-session.guard';
 import { TenantRoomPolicyService } from './tenant-room-policy.service';
+import { TenantWebhookService } from './tenant-webhook.service';
 
 @Module({
   imports: [
@@ -57,7 +58,13 @@ import { TenantRoomPolicyService } from './tenant-room-policy.service';
     TenantRoomsService,
     TenantRoomPolicyService,
     TenantSessionGuard,
+    TenantWebhookService,
   ],
-  exports: [TenantsService, ApiKeyGuard, TenantRoomPolicyService],
+  exports: [
+    TenantsService,
+    ApiKeyGuard,
+    TenantRoomPolicyService,
+    TenantWebhookService,
+  ],
 })
 export class TenantsModule {}

@@ -30,7 +30,15 @@ import {
 import { Repository } from 'typeorm';
 import { Room, RoomVisibility } from '../database/entities/room.entity';
 import { Tenant } from '../database/entities/tenant.entity';
-import { JoinTokenResponse, LivekitService } from '../livekit/livekit.service';
+import {
+  JoinTokenResponse,
+  LivekitService,
+  ParticipantView,
+} from '../livekit/livekit.service';
+import {
+  RecordingView,
+  RecordingsService,
+} from '../recordings/recordings.service';
 import { ROOM_SLUG_MESSAGE, ROOM_SLUG_PATTERN } from '../rooms/slug';
 import { ApiKeyGuard, CurrentTenant } from '../tenants/api-key.guard';
 import { livekitRoomName } from '../tenants/room-name';
@@ -84,6 +92,23 @@ class MintTokenDto {
   @IsOptional()
   @IsBoolean()
   canPublish?: boolean;
+
+  /**
+   * Grants moderator powers *inside* the room — mute, remove, change others'
+   * permissions — so a teacher can run the class from their own browser without
+   * a round trip through this API for every action. Give it to one participant.
+   */
+  @IsOptional()
+  @IsBoolean()
+  roomAdmin?: boolean;
+}
+
+class StartRecordingDto {
+  /** Identity of whoever pressed record, for the platform's own audit trail. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  startedBy?: string;
 }
 
 interface RoomView {
@@ -118,6 +143,7 @@ export class PlatformController {
     private readonly livekit: LivekitService,
     private readonly usage: UsageService,
     private readonly policies: TenantRoomPolicyService,
+    private readonly recordings: RecordingsService,
   ) {}
 
   @Get('usage')
@@ -210,9 +236,10 @@ export class PlatformController {
     const livekitRoom = livekitRoomName(tenant.key, room.slug);
     const admission = await this.policies.admission(tenant, livekitRoom);
     if ('reason' in admission) {
+      const cap = this.policies.limits(tenant).maxDurationSeconds;
       throw new HttpException(
         admission.reason === 'duration_exceeded'
-          ? 'زمان ۳۰ دقیقه‌ای این جلسه به پایان رسیده است.'
+          ? `زمان ${Math.round((cap ?? 0) / 60)} دقیقه‌ای این جلسه به پایان رسیده است.`
           : 'اعتبار این حساب تمام شده است.',
         admission.reason === 'duration_exceeded'
           ? HttpStatus.GONE
@@ -236,8 +263,112 @@ export class PlatformController {
       identity: dto.identity,
       name: dto.name,
       canPublish: dto.canPublish,
+      roomAdmin: dto.roomAdmin,
       limits,
     });
+  }
+
+  /**
+   * Who is in the room right now. A platform knows who it *invited*; only
+   * LiveKit knows who is actually connected and what they are sending.
+   */
+  @Get('rooms/:slug/participants')
+  async listParticipants(
+    @CurrentTenant() tenant: Tenant,
+    @Param('slug') slug: string,
+  ): Promise<ParticipantView[]> {
+    const room = await this.mustFind(tenant, slug);
+    return this.livekit.listParticipants(livekitRoomName(tenant.key, room.slug));
+  }
+
+  /** Silence every track one participant is publishing. */
+  @Post('rooms/:slug/participants/:identity/mute')
+  async muteParticipant(
+    @CurrentTenant() tenant: Tenant,
+    @Param('slug') slug: string,
+    @Param('identity') identity: string,
+  ): Promise<{ ok: true; muted: number }> {
+    const room = await this.mustFind(tenant, slug);
+    const muted = await this.livekit.muteParticipant(
+      livekitRoomName(tenant.key, room.slug),
+      identity,
+    );
+    return { ok: true, muted };
+  }
+
+  /**
+   * Disconnect one participant. They can reconnect with a fresh token — keeping
+   * them out is the platform's job, since the platform decides who gets one.
+   */
+  @Delete('rooms/:slug/participants/:identity')
+  async removeParticipant(
+    @CurrentTenant() tenant: Tenant,
+    @Param('slug') slug: string,
+    @Param('identity') identity: string,
+  ): Promise<{ ok: true }> {
+    const room = await this.mustFind(tenant, slug);
+    await this.livekit.removeParticipant(
+      livekitRoomName(tenant.key, room.slug),
+      identity,
+    );
+    return { ok: true };
+  }
+
+  /**
+   * Recording. One at a time per room — `start` on a room already recording is
+   * a 409 rather than a second file nobody asked for.
+   */
+  @Post('rooms/:slug/recordings')
+  async startRecording(
+    @CurrentTenant() tenant: Tenant,
+    @Param('slug') slug: string,
+    @Body() dto: StartRecordingDto,
+  ): Promise<RecordingView> {
+    await this.mustFind(tenant, slug);
+    return this.recordings.start(tenant, slug, dto.startedBy);
+  }
+
+  @Post('rooms/:slug/recordings/stop')
+  async stopRecording(
+    @CurrentTenant() tenant: Tenant,
+    @Param('slug') slug: string,
+  ): Promise<RecordingView> {
+    await this.mustFind(tenant, slug);
+    return this.recordings.stop(tenant, slug);
+  }
+
+  /** Finished recordings carry a signed `playbackUrl` a browser can open. */
+  @Get('rooms/:slug/recordings')
+  async listRecordings(
+    @CurrentTenant() tenant: Tenant,
+    @Param('slug') slug: string,
+  ): Promise<RecordingView[]> {
+    await this.mustFind(tenant, slug);
+    return this.recordings.list(tenant, slug);
+  }
+
+  @Get('recordings')
+  listAllRecordings(@CurrentTenant() tenant: Tenant): Promise<RecordingView[]> {
+    return this.recordings.list(tenant);
+  }
+
+  @Delete('recordings/:id')
+  deleteRecording(
+    @CurrentTenant() tenant: Tenant,
+    @Param('id') id: string,
+  ): Promise<{ ok: true }> {
+    return this.recordings.remove(tenant, id);
+  }
+
+  /** End the call for everyone, without deleting the room record. */
+  @Post('rooms/:slug/end')
+  async endSession(
+    @CurrentTenant() tenant: Tenant,
+    @Param('slug') slug: string,
+  ): Promise<{ ok: true }> {
+    const room = await this.mustFind(tenant, slug);
+    await this.livekit.closeRoom(livekitRoomName(tenant.key, room.slug));
+    return { ok: true };
   }
 
   private async mustFind(tenant: Tenant, slug: string): Promise<Room> {
