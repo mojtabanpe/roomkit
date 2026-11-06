@@ -99,6 +99,8 @@ curl -X POST https://roomkit.ir/api/v1/rooms/standup/tokens \
 - `roomAdmin: true` به آن شرکت‌کننده اجازهٔ **مدیریت داخل اتاق** می‌دهد: بی‌صدا
   کردن دیگران، اخراج، و تغییر دسترسی آن‌ها — بدون این‌که برای هر کار به این API
   برگردد. برای معلم یا میزبان جلسه بدهید، و فقط به یک نفر.
+- `sources` (اختیاری) اجازهٔ انتشار را به همین منبع‌ها محدود می‌کند، مثلاً
+  `["microphone"]` برای کسی که فقط اجازهٔ صحبت دارد و نه تصویر. نفرستید یعنی همه.
 - اگر اعتبار حساب تمام شده باشد، پاسخ **۴۰۲** است — نه ۴۰۳ و نه ۵۰۰. این را در
   کد خود جدا هندل کنید و به کاربر پیام درست بدهید.
 
@@ -107,13 +109,24 @@ curl -X POST https://roomkit.ir/api/v1/rooms/standup/tokens \
 ## ۴-۱. مدیریت شرکت‌کنندگان از سمت سرور
 
 اگر ترجیح می‌دهید کنترل جلسه در بک‌اند خودتان بماند (به‌جای دادن `roomAdmin` به
-مرورگر معلم)، همان کارها از این‌جا هم انجام می‌شود:
+مرورگر معلم)، همان کارها از این‌جا هم انجام می‌شود. همهٔ این کارها روی اتصالِ
+**زنده** انجام می‌شود؛ کسی که الان در اتاق نیست پاسخ **۴۰۴** می‌گیرد.
 
 ```bash
-# چه کسانی الان داخل اتاق‌اند و چه چیزی می‌فرستند
+# چه کسانی الان داخل اتاق‌اند، چه اجازه‌ای دارند و چه می‌فرستند
 curl https://roomkit.ir/api/v1/rooms/standup/participants -H "X-Api-Key: $ROOMKIT_API_KEY"
 
-# بی‌صدا کردن همهٔ ترک‌های یک نفر
+# اجازهٔ صحبت، بدون قطع و وصل: فقط میکروفون
+curl -X POST https://roomkit.ir/api/v1/rooms/standup/participants/user-42/permissions \
+  -H "X-Api-Key: $ROOMKIT_API_KEY" -H 'Content-Type: application/json' \
+  -d '{"canPublish":true,"sources":["microphone"]}'
+
+# پس گرفتن اجازه (ترک‌های در حال ارسال هم خودبه‌خود بسته می‌شوند)
+curl -X POST https://roomkit.ir/api/v1/rooms/standup/participants/user-42/permissions \
+  -H "X-Api-Key: $ROOMKIT_API_KEY" -H 'Content-Type: application/json' \
+  -d '{"canPublish":false}'
+
+# بی‌صدا کردن (پیش‌فرض فقط میکروفون؛ با sources می‌شود دوربین را هم بست)
 curl -X POST https://roomkit.ir/api/v1/rooms/standup/participants/user-42/mute \
   -H "X-Api-Key: $ROOMKIT_API_KEY"
 
@@ -124,6 +137,15 @@ curl -X DELETE https://roomkit.ir/api/v1/rooms/standup/participants/user-42 \
 # پایان دادن به تماس برای همه (رکورد اتاق می‌ماند)
 curl -X POST https://roomkit.ir/api/v1/rooms/standup/end -H "X-Api-Key: $ROOMKIT_API_KEY"
 ```
+
+- `sources` یکی یا چند تا از `microphone` · `camera` · `screen_share` ·
+  `screen_share_audio` است. اگر با `canPublish: true` نفرستید، همه مجازند.
+- تغییر اجازه فقط برای **همین اتصال** است. مرورگر شرکت‌کننده رویداد
+  `ParticipantPermissionsChanged` را می‌گیرد و می‌تواند همان لحظه میکروفون را
+  باز کند. توکن بعدی دوباره از `canPublish` خودِ توکن پیروی می‌کند، پس اجازه را
+  در سیستم خودتان هم نگه دارید.
+- بی‌صدا کردن را خود شرکت‌کننده می‌تواند برگرداند؛ برای گرفتن واقعی اجازهٔ
+  صحبت از `permissions` استفاده کنید.
 
 ---
 
@@ -289,6 +311,7 @@ const expected = 'sha256=' + createHmac('sha256', secret).update(rawBody).digest
 | `DELETE` | `/api/v1/rooms/:slug` | حذف اتاق (تماس جاری را قطع نمی‌کند) |
 | `POST` | `/api/v1/rooms/:slug/tokens` | توکن ورود |
 | `GET` | `/api/v1/rooms/:slug/participants` | چه کسانی داخل اتاق‌اند |
+| `POST` | `/api/v1/rooms/:slug/participants/:identity/permissions` | دادن یا گرفتن اجازهٔ انتشار، بدون اتصال دوباره |
 | `POST` | `/api/v1/rooms/:slug/participants/:identity/mute` | بی‌صدا کردن یک نفر |
 | `DELETE` | `/api/v1/rooms/:slug/participants/:identity` | قطع اتصال یک نفر |
 | `POST` | `/api/v1/rooms/:slug/end` | پایان تماس برای همه |

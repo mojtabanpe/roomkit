@@ -6,7 +6,10 @@ import {
   EncodedFileOutput,
   EncodedFileType,
   EncodingOptionsPreset,
+  ParticipantInfo,
   RoomServiceClient,
+  TrackSource,
+  TwirpError,
   VideoGrant,
   WebhookEvent,
   WebhookReceiver,
@@ -27,17 +30,10 @@ export interface JoinTokenRequest {
    * the calling platform decides — we only encode what it asks for.
    */
   roomAdmin?: boolean;
+  /** Narrows `canPublish` to these sources; omitted means every source. */
+  publishSources?: TrackSource[];
   /** Product limits the client must apply when publishing media. */
   limits?: RoomConnectionLimits;
-}
-
-/** One participant as LiveKit currently sees them. */
-export interface ParticipantView {
-  identity: string;
-  name: string;
-  joinedAt: Date | null;
-  publishing: boolean;
-  tracks: { sid: string; source: string; muted: boolean }[];
 }
 
 export interface RoomConnectionLimits {
@@ -107,6 +103,9 @@ export class LivekitService {
       canPublishData: true,
       ...(req.roomAdmin ? { roomAdmin: true } : {}),
     };
+    if (grant.canPublish && req.publishSources?.length) {
+      grant.canPublishSources = req.publishSources;
+    }
     at.addGrant(grant);
 
     const token = await at.toJwt();
@@ -147,41 +146,87 @@ export class LivekitService {
     await this.roomAdmin().mutePublishedTrack(room, identity, trackSid, true);
   }
 
-  async listParticipants(room: string): Promise<ParticipantView[]> {
-    const people = await this.roomAdmin().listParticipants(room);
-    return people.map((person) => ({
-      identity: person.identity,
-      name: person.name,
-      joinedAt: person.joinedAt ? new Date(Number(person.joinedAt) * 1000) : null,
-      publishing: person.tracks.some((track) => !track.muted),
-      tracks: person.tracks.map((track) => ({
-        sid: track.sid,
-        source: String(track.source),
-        muted: track.muted,
-      })),
-    }));
+  async removeParticipant(room: string, identity: string): Promise<void> {
+    await this.roomAdmin().removeParticipant(room, identity);
+  }
+
+  /** Who is connected right now. A room nobody has opened yet has no one in it. */
+  async listParticipants(room: string): Promise<ParticipantInfo[]> {
+    try {
+      return await this.roomAdmin().listParticipants(room);
+    } catch (error) {
+      if (isNotFound(error)) return [];
+      throw error;
+    }
+  }
+
+  /** `null` when the participant is not in the room — the caller decides what that means. */
+  async getParticipant(
+    room: string,
+    identity: string,
+  ): Promise<ParticipantInfo | null> {
+    try {
+      return await this.roomAdmin().getParticipant(room, identity);
+    } catch (error) {
+      if (isNotFound(error)) return null;
+      throw error;
+    }
   }
 
   /**
-   * Mute everything one participant is publishing. LiveKit only mutes a single
-   * track at a time, and a person can be sending mic, camera and a screen at
-   * once — the caller means "silence them", not "silence one track".
+   * Mutes what `identity` is sending from the given sources. Muting is the
+   * server's say, but unmuting stays the participant's: LiveKit lets a client
+   * reopen its own track, which is why taking away the right to speak is
+   * `setPublishSources`, not this.
    */
-  async muteParticipant(room: string, identity: string): Promise<number> {
-    const admin = this.roomAdmin();
-    const [person] = (await admin.listParticipants(room)).filter(
-      (candidate) => candidate.identity === identity,
+  async muteSources(
+    room: string,
+    identity: string,
+    sources: TrackSource[],
+  ): Promise<number | null> {
+    const participant = await this.getParticipant(room, identity);
+    if (!participant) return null;
+    const targets = participant.tracks.filter(
+      (track) => !track.muted && sources.includes(track.source),
     );
-    if (!person) return 0;
-    const live = person.tracks.filter((track) => !track.muted);
-    for (const track of live) {
-      await admin.mutePublishedTrack(room, identity, track.sid, true);
+    for (const track of targets) {
+      await this.roomAdmin().mutePublishedTrack(
+        room,
+        identity,
+        track.sid,
+        true,
+      );
     }
-    return live.length;
+    return targets.length;
   }
 
-  async removeParticipant(room: string, identity: string): Promise<void> {
-    await this.roomAdmin().removeParticipant(room, identity);
+  /**
+   * Changes what a connected participant may publish, without a new token and
+   * without a reconnect. An empty list takes publishing away entirely; LiveKit
+   * itself unpublishes any track whose source is no longer allowed.
+   *
+   * LiveKit replaces the permission as a whole, so the fields this call is not
+   * about are carried over from the participant's current grant — otherwise
+   * granting a microphone would quietly take away chat (`canPublishData`).
+   */
+  async setPublishSources(
+    room: string,
+    identity: string,
+    sources: TrackSource[],
+  ): Promise<ParticipantInfo | null> {
+    const participant = await this.getParticipant(room, identity);
+    if (!participant) return null;
+    const current = participant.permission;
+    return this.roomAdmin().updateParticipant(room, identity, {
+      permission: {
+        canSubscribe: current?.canSubscribe ?? true,
+        canPublishData: current?.canPublishData ?? true,
+        canUpdateMetadata: current?.canUpdateMetadata ?? false,
+        hidden: current?.hidden ?? false,
+        canPublish: sources.length > 0,
+        canPublishSources: sources,
+      },
+    });
   }
 
   /** Ends a call for everyone in it — how a spent tenant gets cut off. */
@@ -275,4 +320,9 @@ export class LivekitService {
     }
     return { apiKey, apiSecret, serverUrl };
   }
+}
+
+/** LiveKit answers 404 for a room that does not exist and a participant who is not in it. */
+function isNotFound(error: unknown): boolean {
+  return error instanceof TwirpError && error.status === 404;
 }

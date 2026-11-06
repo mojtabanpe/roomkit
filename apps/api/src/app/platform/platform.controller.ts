@@ -1,10 +1,12 @@
 import {
+  BadRequestException,
   Body,
   ConflictException,
   Controller,
   Delete,
   ForbiddenException,
   Get,
+  HttpCode,
   HttpException,
   HttpStatus,
   NotFoundException,
@@ -15,6 +17,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import {
+  ArrayUnique,
+  IsArray,
   IsBoolean,
   IsIn,
   IsInt,
@@ -27,14 +31,11 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
+import { ParticipantInfo, TrackSource } from 'livekit-server-sdk';
 import { Repository } from 'typeorm';
 import { Room, RoomVisibility } from '../database/entities/room.entity';
 import { Tenant } from '../database/entities/tenant.entity';
-import {
-  JoinTokenResponse,
-  LivekitService,
-  ParticipantView,
-} from '../livekit/livekit.service';
+import { JoinTokenResponse, LivekitService } from '../livekit/livekit.service';
 import {
   RecordingView,
   RecordingsService,
@@ -47,6 +48,29 @@ import { BalanceView, UsageService } from '../usage/usage.service';
 
 /** Same cost as user passwords — a 4-6 digit PIN is worth slowing down. */
 const PASSCODE_ROUNDS = 12;
+
+/**
+ * Track sources as the platform names them. Kept to LiveKit's own four so a
+ * value here always means exactly one `TrackSource`.
+ */
+const SOURCE_NAMES = [
+  'camera',
+  'microphone',
+  'screen_share',
+  'screen_share_audio',
+] as const;
+type SourceName = (typeof SOURCE_NAMES)[number];
+
+const SOURCE_TO_TRACK: Record<SourceName, TrackSource> = {
+  camera: TrackSource.CAMERA,
+  microphone: TrackSource.MICROPHONE,
+  screen_share: TrackSource.SCREEN_SHARE,
+  screen_share_audio: TrackSource.SCREEN_SHARE_AUDIO,
+};
+
+const TRACK_TO_SOURCE = new Map<TrackSource, SourceName>(
+  SOURCE_NAMES.map((name) => [SOURCE_TO_TRACK[name], name]),
+);
 
 class CreateRoomDto {
   @IsString()
@@ -101,6 +125,16 @@ class MintTokenDto {
   @IsOptional()
   @IsBoolean()
   roomAdmin?: boolean;
+
+  /**
+   * Narrows `canPublish` to these sources, so a student allowed to speak cannot
+   * also turn a camera on. Omitted means every source.
+   */
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsIn(SOURCE_NAMES, { each: true })
+  sources?: SourceName[];
 }
 
 class StartRecordingDto {
@@ -109,6 +143,41 @@ class StartRecordingDto {
   @IsString()
   @MaxLength(64)
   startedBy?: string;
+}
+
+class MuteDto {
+  /** What to mute. Omitted means the microphone — the usual "quiet, please". */
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsIn(SOURCE_NAMES, { each: true })
+  sources?: SourceName[];
+}
+
+class PermissionsDto {
+  @IsBoolean()
+  canPublish!: boolean;
+
+  /**
+   * Narrows `canPublish: true` to these sources — e.g. `["microphone"]` lets a
+   * student speak without turning a camera on. Omitted means every source.
+   * Ignored when `canPublish` is false.
+   */
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsIn(SOURCE_NAMES, { each: true })
+  sources?: SourceName[];
+}
+
+interface ParticipantView {
+  identity: string;
+  name: string;
+  joinedAt: string | null;
+  canPublish: boolean;
+  /** empty while `canPublish` is true means every source is allowed */
+  canPublishSources: SourceName[];
+  tracks: { sid: string; source: SourceName | 'unknown'; muted: boolean }[];
 }
 
 interface RoomView {
@@ -262,44 +331,86 @@ export class PlatformController {
       room: livekitRoom,
       identity: dto.identity,
       name: dto.name,
-      canPublish: dto.canPublish,
-      roomAdmin: dto.roomAdmin,
+      canPublish: dto.canPublish,      roomAdmin: dto.roomAdmin,
+      publishSources: dto.sources?.map((name) => SOURCE_TO_TRACK[name]),
       limits,
     });
   }
 
   /**
-   * Who is in the room right now. A platform knows who it *invited*; only
-   * LiveKit knows who is actually connected and what they are sending.
+   * Who is connected right now, and what each of them is sending. A platform
+   * knows who it *invited*; only LiveKit knows who actually turned up.
    */
   @Get('rooms/:slug/participants')
-  async listParticipants(
+  async participants(
     @CurrentTenant() tenant: Tenant,
     @Param('slug') slug: string,
   ): Promise<ParticipantView[]> {
     const room = await this.mustFind(tenant, slug);
-    return this.livekit.listParticipants(livekitRoomName(tenant.key, room.slug));
+    const people = await this.livekit.listParticipants(
+      livekitRoomName(tenant.key, room.slug),
+    );
+    return people.map((person) => this.participantView(person));
   }
 
-  /** Silence every track one participant is publishing. */
+  /**
+   * Mutes one participant's tracks. They can unmute themselves — to take the
+   * right to speak away, use `permissions` with `canPublish: false`.
+   */
   @Post('rooms/:slug/participants/:identity/mute')
-  async muteParticipant(
+  @HttpCode(HttpStatus.OK)
+  async mute(
     @CurrentTenant() tenant: Tenant,
     @Param('slug') slug: string,
     @Param('identity') identity: string,
+    @Body() dto: MuteDto,
   ): Promise<{ ok: true; muted: number }> {
     const room = await this.mustFind(tenant, slug);
-    const muted = await this.livekit.muteParticipant(
+    const sources = (dto.sources ?? ['microphone']).map(
+      (name) => SOURCE_TO_TRACK[name],
+    );
+    const muted = await this.livekit.muteSources(
       livekitRoomName(tenant.key, room.slug),
       identity,
+      sources,
     );
+    if (muted === null) throw this.notInRoom();
     return { ok: true, muted };
   }
 
   /**
-   * Disconnect one participant. They can reconnect with a fresh token — keeping
-   * them out is the platform's job, since the platform decides who gets one.
+   * Changes what a connected participant may publish, live. The participant's
+   * browser gets `ParticipantPermissionsChanged` and can open its microphone at
+   * once — no new token, no reconnect. It lasts for this connection only: the
+   * next token you mint decides again, so store the grant on your side too.
    */
+  @Post('rooms/:slug/participants/:identity/permissions')
+  @HttpCode(HttpStatus.OK)
+  async setPermissions(
+    @CurrentTenant() tenant: Tenant,
+    @Param('slug') slug: string,
+    @Param('identity') identity: string,
+    @Body() dto: PermissionsDto,
+  ): Promise<ParticipantView> {
+    const room = await this.mustFind(tenant, slug);
+    const sources = dto.canPublish
+      ? (dto.sources ?? SOURCE_NAMES).map((name) => SOURCE_TO_TRACK[name])
+      : [];
+    if (dto.canPublish && sources.length === 0) {
+      throw new BadRequestException(
+        'برای اجازهٔ انتشار دست‌کم یک منبع لازم است.',
+      );
+    }
+    const updated = await this.livekit.setPublishSources(
+      livekitRoomName(tenant.key, room.slug),
+      identity,
+      sources,
+    );
+    if (!updated) throw this.notInRoom();
+    return this.participantView(updated);
+  }
+
+  /** Disconnects one participant. A fresh token lets them back in — refusing one is yours to do. */
   @Delete('rooms/:slug/participants/:identity')
   async removeParticipant(
     @CurrentTenant() tenant: Tenant,
@@ -307,10 +418,11 @@ export class PlatformController {
     @Param('identity') identity: string,
   ): Promise<{ ok: true }> {
     const room = await this.mustFind(tenant, slug);
-    await this.livekit.removeParticipant(
-      livekitRoomName(tenant.key, room.slug),
-      identity,
-    );
+    const livekitRoom = livekitRoomName(tenant.key, room.slug);
+    if (!(await this.livekit.getParticipant(livekitRoom, identity))) {
+      throw this.notInRoom();
+    }
+    await this.livekit.removeParticipant(livekitRoom, identity);
     return { ok: true };
   }
 
@@ -369,6 +481,29 @@ export class PlatformController {
     const room = await this.mustFind(tenant, slug);
     await this.livekit.closeRoom(livekitRoomName(tenant.key, room.slug));
     return { ok: true };
+  }
+
+  private notInRoom(): NotFoundException {
+    return new NotFoundException('این شرکت‌کننده الان در اتاق نیست.');
+  }
+
+  private participantView(person: ParticipantInfo): ParticipantView {
+    const permission = person.permission;
+    const joinedAt = Number(person.joinedAt);
+    return {
+      identity: person.identity,
+      name: person.name,
+      joinedAt: joinedAt > 0 ? new Date(joinedAt * 1000).toISOString() : null,
+      canPublish: permission?.canPublish ?? false,
+      canPublishSources: (permission?.canPublishSources ?? [])
+        .map((source) => TRACK_TO_SOURCE.get(source))
+        .filter((name): name is SourceName => name !== undefined),
+      tracks: person.tracks.map((track) => ({
+        sid: track.sid,
+        source: TRACK_TO_SOURCE.get(track.source) ?? 'unknown',
+        muted: track.muted,
+      })),
+    };
   }
 
   private async mustFind(tenant: Tenant, slug: string): Promise<Room> {
