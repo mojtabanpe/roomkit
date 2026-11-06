@@ -429,10 +429,32 @@ h2 {
   color: var(--on-surface-variant);
 }
 .legal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
   max-width: 980px;
   margin: 0 auto;
   padding-top: 20px;
   border-top: 1px solid var(--outline-variant);
   font-size: 13px;
   color: var(--on-surface-variant);
+}
+
+/* The Enamad seal is a fixed-size third-party badge: give it a light plate so
+   its white artwork keeps its edges on the footer surface. */
+.enamad {
+  display: inline-flex;
+  padding: 6px;
+  border-radius: var(--rk-radius-sm);
+  background: #fff;
+  border: 1px solid var(--outline-variant);
+  cursor: pointer;
+  line-height: 0;
+}
+.enamad img {
+  display: block;
+  width: auto;
+  height: 76px;
 }
