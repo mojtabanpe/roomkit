@@ -19,6 +19,13 @@ import { livekitRoomName } from '../tenants/room-name';
 const OPEN: Recording['status'][] = ['starting', 'active'];
 const DEFAULT_LINK_TTL_SECONDS = 6 * 60 * 60;
 
+/**
+ * The only recorder this build knows how to drive. Named rather than treated as
+ * a boolean because turning recording on is a choice *between* backends, and a
+ * typo must not quietly select the one that needs redis.
+ */
+const EGRESS_BACKEND = 'egress';
+
 export interface RecordingView {
   id: string;
   slug: string;
@@ -85,6 +92,9 @@ export class RecordingsService {
       order: { createdAt: 'DESC' },
     });
     if (!row) throw new NotFoundException('ضبط فعالی برای این جلسه نیست.');
+    // Same gate as `start`: if the backend was switched off under a running
+    // job, `remove` is the way out — it stops best-effort and deletes the row.
+    this.assertRecorderAvailable();
     await this.livekit.stopRecording(row.egressId);
     return this.view(row);
   }
@@ -234,10 +244,23 @@ export class RecordingsService {
    * recorder outage must cost a recording, never a class.
    */
   private assertRecorderAvailable(): void {
-    if (this.config.get<string>('RECORDER_BACKEND')) return;
-    throw new ServiceUnavailableException(
-      'سرویس ضبط روی این نصب فعال نیست.',
-    );
+    const backend = this.config.get<string>('RECORDER_BACKEND')?.trim();
+    if (!backend) {
+      throw new ServiceUnavailableException(
+        'سرویس ضبط روی این نصب فعال نیست.',
+      );
+    }
+    if (backend.toLowerCase() !== EGRESS_BACKEND) {
+      // A misconfiguration, not a disabled feature — but still 503, because
+      // from the tenant's side recording is equally not happening either way.
+      this.log.error(
+        `RECORDER_BACKEND="${backend}" is not a backend this build can drive; ` +
+          `the only recognised value is "${EGRESS_BACKEND}".`,
+      );
+      throw new ServiceUnavailableException(
+        'سرویس ضبط درست پیکربندی نشده است.',
+      );
+    }
   }
 
   private linkSecret(): string {

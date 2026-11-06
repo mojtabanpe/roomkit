@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   AccessToken,
@@ -246,24 +250,44 @@ export class LivekitService {
     room: string,
     relativePath: string,
   ): Promise<{ egressId: string }> {
-    const info = await this.egress().startRoomCompositeEgress(
-      room,
-      new EncodedFileOutput({
-        fileType: EncodedFileType.MP4,
-        filepath: `${this.recordingsDir()}/${relativePath}`,
-      }),
-      {
-        layout: 'speaker',
-        // 720p keeps a 90-minute class near ~1GB and keeps the headless
-        // browser's CPU cost survivable on a shared box.
-        encodingOptions: EncodingOptionsPreset.H264_720P_30,
-      },
+    const info = await this.egressCall(() =>
+      this.egress().startRoomCompositeEgress(
+        room,
+        new EncodedFileOutput({
+          fileType: EncodedFileType.MP4,
+          filepath: `${this.recordingsDir()}/${relativePath}`,
+        }),
+        {
+          layout: 'speaker',
+          // 720p keeps a 90-minute class near ~1GB and keeps the headless
+          // browser's CPU cost survivable on a shared box.
+          encodingOptions: EncodingOptionsPreset.H264_720P_30,
+        },
+      ),
     );
     return { egressId: info.egressId };
   }
 
   async stopRecording(egressId: string): Promise<void> {
-    await this.egress().stopEgress(egressId);
+    await this.egressCall(() => this.egress().stopEgress(egressId));
+  }
+
+  /**
+   * Egress is a separate service that finds LiveKit through redis, so on an
+   * install that deliberately runs single-node (see deploy/livekit/livekit.yaml)
+   * these calls fail at the transport instead of answering. Untranslated that
+   * surfaces to a tenant as a bare 500 for a feature this deployment simply
+   * does not run — say so instead, with the status that means it.
+   */
+  private async egressCall<T>(call: () => Promise<T>): Promise<T> {
+    try {
+      return await call();
+    } catch (error) {
+      if (!isRecorderUnreachable(error)) throw error;
+      throw new ServiceUnavailableException(
+        'سرویس ضبط در دسترس نیست: LiveKit Egress روی این نصب اجرا نمی‌شود.',
+      );
+    }
   }
 
   /** Where finished files land, as both containers see it. */
@@ -325,4 +349,26 @@ export class LivekitService {
 /** LiveKit answers 404 for a room that does not exist and a participant who is not in it. */
 function isNotFound(error: unknown): boolean {
   return error instanceof TwirpError && error.status === 404;
+}
+
+/** Connection failures as node reports them; undici hides its own under `cause`. */
+const UNREACHABLE_CODES = new Set([
+  'ECONNREFUSED',
+  'ECONNRESET',
+  'ENOTFOUND',
+  'ETIMEDOUT',
+  'EAI_AGAIN',
+]);
+
+/**
+ * True when the recorder could not be reached at all, as opposed to reaching it
+ * and being told no. LiveKit itself answers 503 when no egress worker has ever
+ * registered with it, which is the same situation from the caller's side.
+ */
+function isRecorderUnreachable(error: unknown): boolean {
+  if (error instanceof TwirpError) return error.status >= 500;
+  const code = (error as { code?: unknown } | null)?.code;
+  if (typeof code === 'string' && UNREACHABLE_CODES.has(code)) return true;
+  const cause = (error as { cause?: { code?: unknown } } | null)?.cause;
+  return typeof cause?.code === 'string' && UNREACHABLE_CODES.has(cause.code);
 }

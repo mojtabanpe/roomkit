@@ -1,3 +1,4 @@
+import { ServiceUnavailableException } from '@nestjs/common';
 import {
   ParticipantPermission,
   TrackSource,
@@ -149,5 +150,57 @@ describe('LivekitService participant control', () => {
       });
       expect(videoGrant(token).canPublishSources).toBeUndefined();
     });
+  });
+});
+
+/**
+ * This install runs LiveKit single-node on purpose, so Egress is unreachable
+ * rather than merely idle. The caller must see that as "recorder unavailable",
+ * not as a crash — the whole point of the 503 the platform API documents.
+ */
+describe('LivekitService recording transport', () => {
+  const service = new LivekitService({
+    get: (key: string) =>
+      ({
+        LIVEKIT_API_KEY: 'devkey',
+        LIVEKIT_API_SECRET: 'secret',
+        LIVEKIT_URL: 'ws://localhost:7880',
+      })[key],
+  } as never);
+
+  const egressThatFails = (error: unknown) =>
+    jest.spyOn(service as never, 'egress' as never).mockReturnValue({
+      startRoomCompositeEgress: jest.fn().mockRejectedValue(error),
+      stopEgress: jest.fn().mockRejectedValue(error),
+    } as never);
+
+  afterEach(() => jest.restoreAllMocks());
+
+  it('reports a refused connection as unavailable, not as a 500', async () => {
+    // undici reports a refused socket as `TypeError: fetch failed` and hides
+    // the real reason under `cause`, which is why the check looks there.
+    const refused = Object.assign(new TypeError('fetch failed'), {
+      cause: { code: 'ECONNREFUSED' },
+    });
+    egressThatFails(refused);
+
+    await expect(
+      service.startRoomRecording('t_room', 'store/standup/a.mp4'),
+    ).rejects.toBeInstanceOf(ServiceUnavailableException);
+  });
+
+  it('treats "no egress worker registered" the same way', async () => {
+    egressThatFails(new TwirpError('unavailable', 'no instance available', 503));
+
+    await expect(service.stopRecording('EG_1')).rejects.toBeInstanceOf(
+      ServiceUnavailableException,
+    );
+  });
+
+  it('lets a real rejection through untouched', async () => {
+    const rejected = new TwirpError('invalid_argument', 'bad filepath', 400);
+    egressThatFails(rejected);
+
+    await expect(service.stopRecording('EG_1')).rejects.toBe(rejected);
   });
 });

@@ -51,9 +51,13 @@ services:
       LIVEKIT_API_KEY: roomkit
       LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
       LIVEKIT_URL: ${LIVEKIT_URL}
-      # Must match the egress container's mount below — egress writes the mp4,
-      # the api streams it back out. Disagreeing paths mean 404s for files that
-      # exist on disk.
+      # Recording stays off until this names a backend; `egress` is the only
+      # one implemented, and livekit/livekit.yaml explains why it is not
+      # enabled here. Unset, the recording endpoints answer a clean 503.
+      RECORDER_BACKEND: ${RECORDER_BACKEND:-}
+      # Must match the recorder's mount — the recorder writes the mp4, the api
+      # streams it back out. Disagreeing paths mean 404s for files that exist
+      # on disk.
       RECORDINGS_DIR: /recordings
       # Signs playback links. Falls back to LIVEKIT_API_SECRET when unset, so a
       # missing value degrades to "reuses another secret", never to "unsigned".
