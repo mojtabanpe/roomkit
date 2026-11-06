@@ -455,6 +455,11 @@ h2 {
 }
 .enamad img {
   display: block;
-  width: auto;
+  /* Reserved rather than measured. The badge is fetched from a third party, so
+     `width: auto` collapsed the plate to a ~14px sliver whenever the image did
+     not arrive. A fixed box keeps the footer's shape either way, and
+     object-fit lets the real artwork sit in it at its own aspect ratio. */
+  width: 64px;
   height: 76px;
+  object-fit: contain;
 }
